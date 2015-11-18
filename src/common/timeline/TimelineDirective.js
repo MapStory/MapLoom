@@ -53,6 +53,8 @@
                   list.innerHTML += '<option value=' + Math.round(timelineService.timeToPercent(Date.parse(timelineTicks[i]))) + '></option>';
                 }
                 elementSlider_.parentNode.insertBefore(list, elementSlider_.nextSibling);
+                // when tick marks change, we need to refresh the timeslider
+                $(elementSlider_).hide().fadeIn('fast');
               }
               $timeout(function() {
                 sliders.popover('show');
