@@ -36,6 +36,8 @@
     "grunt-ngmin": "0.0.2",
     "grunt-recess": "~0.3.0",
     "jasmine": "^2.4.1",
+    "karma-coffee-preprocessor": "^0.3.0",
+    "karma-ng-html2js-preprocessor": "^0.2.1",
     "karma": "^0.13.21",
     "karma-jasmine": "^0.3.7",
     "karma-phantomjs-launcher": "^1.0.0",
