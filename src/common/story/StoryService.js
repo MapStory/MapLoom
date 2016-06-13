@@ -404,6 +404,10 @@
       toastr.success(translate_.instant('saveChapterView'), translate_.instant('saveViewTitle'));
     };
 
+    this.setDataPlayback = function() {
+      console.log('toggle playback settings here');
+    };
+
     this.updateStoryID = function(id) {
       this.id = id;
       for (var iConfig = 0; iConfig < this.configurations.length; iConfig += 1) {
