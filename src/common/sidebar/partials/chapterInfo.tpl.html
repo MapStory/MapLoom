@@ -27,14 +27,15 @@
 
 <div class="menuItem">
     <label for="playbackSettings">Data Playback</label>
-    <div class="btn-group btn-group-justified" data-toggle="buttons">
+    <button ng-click="storyService.setDataPlayback()" type="button" class="btn-composer btn-block">Cumulative button</button>
+<!--     <div class="btn-group btn-group-justified" data-toggle="buttons">
         <div class="btn btn-composer active">
             <input type="radio" name="instantPlayback" id="instantPlayback" autocomplete="off" checked> Instant
         </div>
         <div class="btn btn-composer">
             <input type="radio" name="cumulativePlayback" id="cumulativePlayback" autocomplete="off"> Cumulative
         </div>
-    </div>
+    </div> -->
 </div>
 <div class="menuItem">
     <button ng-click="storyService.save()" type="button" class="btn-composer btn-block">Save Chapter Info</button>

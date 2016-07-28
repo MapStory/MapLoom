@@ -406,6 +406,22 @@
 
     this.setDataPlayback = function() {
       console.log('toggle playback settings here');
+      if (this.active_chapter.tools) {
+        this.active_chapter.tools.push({
+          ptype: 'gxp_playback',
+          outputconfig: {
+            playbackMode: 'cumulative'
+          }
+        });
+      }
+      else {
+        this.active_chapter.tools = [{
+          ptype: 'gxp_playback',
+          outputconfig: {
+            playbackMode: 'cumulative'
+          }
+        }];
+      }
     };
 
     this.updateStoryID = function(id) {
