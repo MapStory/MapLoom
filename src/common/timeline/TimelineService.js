@@ -1,17 +1,19 @@
 (function() {
   var module = angular.module('loom_timeline_service', []);
+  var activeChapterIndex_ = 0;
   var stutils = storytools.core.time.utils;
   var service_ = null;
   var mapService_ = null;
   var boxService_ = null;
   var pinService_ = null;
+  var storyService_ = null;
   var timelineTicks_ = null;
   var currentTickIndex_ = null;
   var currentTime_ = null;
   var interval_ = null;
   var intervalPromise_ = null;
   var rootScope_ = null;
-  var repeat_ = true;
+  var repeat_ = 'none';
   var filterByTime_ = true;
   var featureManagerService_ = null;
   var boxes_ = [];
@@ -109,15 +111,21 @@
     // public variable can be placed on scope
     this.hasLayerWithTime = false;
 
-    this.$get = function(mapService, boxService, pinService, $interval, $rootScope, $filter, featureManagerService) {
+    this.$get = function(mapService, boxService, pinService, storyService, $interval, $rootScope, $filter, $injector, featureManagerService) {
       service_ = this;
       mapService_ = mapService;
       boxService_ = boxService;
       pinService_ = pinService;
+      storyService_ = storyService;
       interval_ = $interval;
       rootScope_ = $rootScope;
       featureManagerService_ = featureManagerService;
       filter_ = $filter;
+
+      this.repeat = 'none';
+      this.loopText = 'Loop Chapter';
+      this.loopStoryEnabled = false;
+      this.loopChapterEnabled = false;
 
       // when a layer is added, reinitialize the service.
       $rootScope.$on('layer-added', function(event, layer) {
@@ -165,6 +173,7 @@
         if (service_.isPlaying()) {
           service_.stop();
         }
+        activeChapterIndex_ = chapter_index;
         service_.initialize();
       });
 
@@ -299,8 +308,14 @@
       service_.updateLayersTimes({ start: timelineTicks_[0], end: timelineTicks_[currentTickIndex_]});
     };
 
+    this.getLoopText = function() {
+      return service_.loopText;
+    };
+
     this.getRepeat = function() {
-      return repeat_;
+      if (service_.repeat !== 'none') {
+        return true;
+      }
     };
 
     this.isPlaying = function() {
@@ -310,11 +325,29 @@
       return false;
     };
 
-    this.setRepeat = function(repeat) {
-      if (goog.isDefAndNotNull(repeat) && repeat === true) {
-        repeat_ = true;
+    this.toggleLoop = function() {
+      if (service_.repeat === 'none') {
+        service_.repeat = 'chapter';
+        service_.loopText = 'Loop Story';
+        service_.loopChapterEnabled = true;
+      } else if (service_.repeat === 'chapter') {
+        service_.repeat = 'story';
+        service_.loopText = 'Disable Loop';
+        service_.loopStoryEnabled = true;
+        service_.loopChapterEnabled = false;
       } else {
-        repeat_ = false;
+        service_.loopText = 'Loop Chapter';
+        service_.repeat = 'none';
+        service_.loopStoryEnabled = false;
+        service_.loopChapterEnabled = false;
+      }
+    };
+
+    this.getLoopButtonGlyph = function() {
+      if (service_.repeat === 'story') {
+        return 'glyphicon glyphicon-refresh';
+      } else {
+        return 'glyphicon glyphicon-repeat';
       }
     };
 
@@ -526,7 +559,16 @@
         if (currentTickIndex_ + 1 < timelineTicks_.length) {
           service_.setTimeTickIndex(currentTickIndex_ + 1);
         } else {
-          if (repeat_) {
+          activeChapterIndex_++;
+          console.log(service_.repeat);
+          if (service_.repeat === 'story' && activeChapterIndex_ < storyService_.configurations.length) {
+            storyService_.update_active_config(activeChapterIndex_);
+            service_.start();
+          } else if (activeChapterIndex_ === storyService_.configurations.length) {
+            activeChapterIndex_ = 0;
+            storyService_.update_active_config(activeChapterIndex_);
+            service_.start();
+          } else if (service_.repeat === 'chapter') {
             service_.setTimeTickIndex(0);
           } else {
             success = false;
@@ -534,6 +576,18 @@
         }
       }
       return success;
+    };
+
+    this.selectPin = function(pin) {
+      this.active_pin = pin;
+      if (this.active_pin.in_map === true) {
+        if (service_.isPlaying()) {
+          service_.stop();
+        }
+        var time = getTime(this.active_pin.start_time);
+        service_.setTimeCurrent(time);
+        service_.setTimeNextTick();
+      }
     };
 
     this.setTimePrevTick = function() {

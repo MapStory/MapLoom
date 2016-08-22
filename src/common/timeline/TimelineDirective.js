@@ -17,11 +17,23 @@
             scope.timeCurrentPercent = 0;
             scope.timeCurrentPercentToolTip = '';
             scope.timelineService = timelineService;
+            scope.repeat = timelineService.repeat;
+            scope.loopText = timelineService.loopText;
+            scope.loopStoryEnabled = timelineService.loopStoryEnabled;
+            scope.loopChapterEnabled = timelineService.loopChapterEnabled;
+            scope.toggleLoop = timelineService.toggleLoop;
+            scope.getLoopButtonGlyph = timelineService.getLoopButtonGlyph;
             scope.getRepeat = timelineService.getRepeat;
-            scope.setRepeat = timelineService.setRepeat;
+            scope.getContinuousPlay = timelineService.getContinuousPlay;
+            scope.setContinuousPlay = timelineService.setContinuousPlay;
             scope.setFilterByTime = timelineService.setFilterByTime;
             scope.getFilterByTime = timelineService.getFilterByTime;
             scope.show_timeline = true;
+            scope.handleLoopClick = function() {
+              scope.toggleLoop();
+              scope.loopText = timelineService.getLoopText();
+              console.log(timelineService.getLoopText());
+            };
             scope.toggleTimeline = function() {
               scope.show_timeline = scope.show_timeline === false ? true : false;
 
@@ -34,6 +46,7 @@
               }
 
             };
+
             var timeline = null;
             var sliders = element.find('.timeline-slider');
             elementSlider_ = sliders[0];

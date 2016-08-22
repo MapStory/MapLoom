@@ -14,13 +14,12 @@
   var diffService_ = null;
   var boxService_ = null;
   var pinService_ = null;
-  var timelineService_ = null;
 
 
   module.provider('storyService', function() {
 
     this.$get = function($window, $http, $q, $cookies, $location, $translate, $rootScope, mapService, featureManagerService,
-                         configService, dialogService, historyService, diffService, tableViewService, pinService, boxService, timelineService) {
+                         configService, dialogService, historyService, diffService, tableViewService, pinService, boxService) {
       service_ = this;
       q_ = $q;
       mapService_ = mapService;
@@ -35,7 +34,6 @@
       diffService_ = diffService;
       boxService_ = boxService;
       pinService_ = pinService;
-      timelineService_ = timelineService;
 
       //When initializing the story service the mapService should already be initialized
       this.copy_config = angular.copy(mapService_.configuration);
@@ -139,7 +137,6 @@
       this.active_layer = null;
       this.active_index = null;
       this.active_box = null;
-      this.active_pin = null;
       this.active_chapter = null;
     };
 
@@ -149,19 +146,6 @@
 
     this.selectBox = function(box) {
       this.active_box = box;
-    };
-
-
-    this.selectPin = function(pin) {
-      this.active_pin = pin;
-      if (this.active_pin.in_map === true) {
-        if (timelineService_.isPlaying()) {
-          timelineService_.stop();
-        }
-        var time = getTime(this.active_pin.start_time);
-        timelineService_.setTimeCurrent(time);
-        timelineService_.setTimeNextTick();
-      }
     };
 
     this.toggleVisiblity = function(layer) {

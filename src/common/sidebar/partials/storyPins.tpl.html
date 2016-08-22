@@ -11,7 +11,7 @@
 
 <div id="storyPinsList">
     <div ng-repeat="storyPin in storyPins = pinService.getPins(chapter.id)">
-        <a href="#" class="menuItem" ng-click="storyService.selectPin(storyPin);updateMenuSection('editStoryPin' + chapter.id + storyPins.id)">{{ storyPin.title }}</a>
+        <a href="#" class="menuItem" ng-click="timelineService.selectPin(storyPin);updateMenuSection('editStoryPin' + chapter.id + storyPins.id)">{{ storyPin.title }}</a>
     </div>
 </div>
 
