@@ -1,11 +1,9 @@
-<h2>{{ layerService.getTitle(storyService.active_layer) }}</h2>
-<div class="topText"><a href="#" ng-click="updateMenuSection('mainMenu')">{{ 'Index' | translate:'Index' }}</a> > <a href="#" ng-click="updateMenuSection('selectedChapter' + chapter.id)">{{ chapter.chapter }}</a></div>
+<h2> Layer: {{ layerService.getTitle(storyService.active_layer) }}</h2>
 
 <button class="btn-storylayer" ng-click="storyService.startFeatureAdd(); toggleSidebar('editSingleStoryLayer' + layerName)" ng-disabled="storyService.isNotEditable()"><i class="fa fa-plus"></i>Add Feature</button>
 <button class="btn-storylayer" ng-click="storyService.startFeatureEdit(); toggleSidebar('editSingleStoryLayer' + layerName)" ng-disabled="storyService.isNotEditable()"><i class="fa fa-edit"></i>Edit Feature</button>
-<button class="btn-storylayer" ng-click="openLink('/layers/geonode:' + storyService.active_layer.get('metadata').name, '_blank')"><i class="fa fa-tags"></i>Metadata</button></a>
+<button class="btn-storylayer" ng-click="openLink('/layers/geonode:' + storyService.active_layer.get('metadata').name, '_blank')"><i class="fa fa-tags"></i>Metadata</button>
+<!-- <button class="btn-storylayer" ng-click="openLink('/layers/geonode:' + storyService.active_layer.get('metadata').name + '?showMetadata=true', '_blank')"><i class="fa fa-tags"></i>Edit Metadata</button> -->
 <button class="btn-storylayer" ng-click="storyService.showTable()" ng-disabled="storyService.isNotEditable()"><i class="fa fa-list-alt"></i>View Table</button>
 <button class="btn-storylayer" ng-disabled="storyService.hasNoHistory()" ng-click="storyService.getHistory();updateMenuSection('viewSingleLayerHistory' + layerName)"><i class="fa fa-hourglass"></i>View History</button>
-<button class="btn-storylayer" ng-click="openLink('/layers/geonode:' + storyService.active_layer.get('metadata').name, '_self')"><i class="fa fa-sign-out"></i>Exit</button></a>
-
-<h5 class="text-right"><a href="http://wiki.mapstory.org/wiki/Versioned_Editing" target="_blank">Editing Help</a></h5>
+<button class="btn-storylayer" ng-click="openLink('/layers/geonode:' + storyService.active_layer.get('metadata').name)"><i class="fa fa-sign-out"></i>Exit</button></a>
