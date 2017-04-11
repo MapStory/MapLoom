@@ -45,16 +45,18 @@
 
     this.replaceLayers = function(newLayers) {
       var featurePanel = this;
-      var layers = this.map.getLayers();
-      layers.forEach(function(layer) {
-        featurePanel.map.removeLayer(layer);
-      });
+      var layers = featurePanel.map.getLayers();
+      layers.clear();
+
+      featurePanel.map.getLayerGroup().setLayers(layers);
+
       newLayers.forEach(function(layer) {
+
         if (!goog.isDefAndNotNull(layer.get('metadata').internalLayer) || !layer.get('metadata').internalLayer) {
           featurePanel.map.addLayer(layer);
         }
       });
-      this.map.addLayer(this.featureLayer);
+      featurePanel.map.addLayer(featurePanel.featureLayer);
     };
   };
 
@@ -137,23 +139,25 @@
     this.layer = null;
     this.combinedExtent = [0, 0, 0, 0];
 
-    this.$get = function($rootScope, mapService, geogigService, dialogService, $translate) {
+    this.$get = function($rootScope, configService, mapService, geogigService, dialogService, $translate) {
       service_ = this;
+      configService_ = configService;
+      service_.configuration = configService_.configuration;
       rootScope_ = $rootScope;
       mapService_ = mapService;
       geogigService_ = geogigService;
+      globalConfigProj = service_.configuration.map.projection;
       dialogService_ = dialogService;
       translate_ = $translate;
       ol.extent.empty(this.combinedExtent);
+
       var createMap = function(panel) {
+        var sharedView = mapService.map.getView();
+
         panel.map = new ol.Map({
           //renderer: ol.RendererHint.CANVAS,
           ol3Logo: false,
-          view: new ol.View({
-            center: ol.proj.transform([-87.2011, 14.1], 'EPSG:4326', 'EPSG:3857'),
-            zoom: 14,
-            maxZoom: 20
-          })
+          view: sharedView
         });
 
         var controls = panel.map.getControls();
@@ -167,8 +171,6 @@
       createMap(this.left);
       createMap(this.right);
       createMap(this.merged);
-      this.merged.map.bindTo('view', service_.left.map);
-      this.right.map.bindTo('view', service_.left.map);
 
       return this;
     };
@@ -335,7 +337,7 @@
         var metadata = layer.get('metadata');
         if (goog.isDefAndNotNull(metadata)) {
           if (goog.isDefAndNotNull(metadata.geogigStore) && metadata.geogigStore === repoName) {
-            if (goog.isDefAndNotNull(metadata.nativeName) && metadata.nativeName === splitFeature[0]) {
+            if (goog.isDefAndNotNull(metadata.nativeName) && (metadata.nativeName == splitFeature[0] || metadata.nativeName.split(':')[1] === splitFeature[0])) {
               service_.layer = layer;
               if (goog.isDefAndNotNull(layer.get('metadata').schema)) {
                 service_.schema = layer.get('metadata').schema;
@@ -512,6 +514,7 @@
                 assignAttributeTypes(service_.merged.attributes, true);
               }
             }
+            panel.map.updateSize();
             rootScope_.$broadcast('feature-diff-performed');
           }
         }
@@ -584,7 +587,11 @@
   function assignAttributeTypes(properties, editable) {
     if (goog.isDefAndNotNull(service_.schema)) {
       for (var propertyIndex = 0; propertyIndex < properties.length; propertyIndex++) {
-        properties[propertyIndex].type = service_.schema[properties[propertyIndex].attributename]._type;
+        var schema_property = service_.schema[properties[propertyIndex].attributename];
+        if (!goog.isDefAndNotNull(schema_property)) {
+          continue;
+        }
+        properties[propertyIndex].type = schema_property._type;
         if (properties[propertyIndex].type === 'simpleType') {
           properties[propertyIndex].enum =
               service_.schema[properties[propertyIndex].attributename].simpleType.restriction.enumeration;

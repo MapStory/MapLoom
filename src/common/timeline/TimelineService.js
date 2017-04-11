@@ -4,9 +4,11 @@
   var service_ = null;
   var mapService_ = null;
   var boxService_ = null;
+  var pinService_ = null;
   var timelineTicks_ = null;
   var currentTickIndex_ = null;
   var currentTime_ = null;
+  var timelineTicksMap_ = null;
   var interval_ = null;
   var intervalPromise_ = null;
   var rootScope_ = null;
@@ -14,9 +16,13 @@
   var filterByTime_ = true;
   var featureManagerService_ = null;
   var boxes_ = [];
+  var pins_ = [];
   var timelinePointsList = [];
   var timelineGroupsList_ = [];
   var range_ = new stutils.Range(null, null);
+  var filter_ = null;
+  var pinsForMap_ = [];
+  var showingPin = false;
 
   function computeTicks(layersWithTime) {
 
@@ -35,6 +41,9 @@
       if (angular.isArray(times)) {
         // an array of instants or extents
         range = stutils.computeRange(times);
+        if (range.isEmpty() !== true && range.end == range.start) {
+          range.end += 1;
+        }
         if (times.length) {
           if (stutils.isRangeLike(times[0])) {
             times.forEach(function(r) {
@@ -79,6 +88,13 @@
         start = smallest.offset(start);
       }
     }
+
+    for (var iPin = 0; iPin < pinsForMap_.length; iPin += 1) {
+      var pin = pinsForMap_[iPin];
+      addTick(pin.start_time);
+      addTick(pin.end_time);
+    }
+
     ticks = Object.getOwnPropertyNames(ticks).map(function(t) {
       return parseInt(t, 10);
     });
@@ -97,13 +113,15 @@
     // public variable can be placed on scope
     this.hasLayerWithTime = false;
 
-    this.$get = function(mapService, boxService, $interval, $rootScope, featureManagerService) {
+    this.$get = function(mapService, boxService, pinService, $interval, $rootScope, $filter, featureManagerService) {
       service_ = this;
       mapService_ = mapService;
       boxService_ = boxService;
+      pinService_ = pinService;
       interval_ = $interval;
       rootScope_ = $rootScope;
       featureManagerService_ = featureManagerService;
+      filter_ = $filter;
 
       // when a layer is added, reinitialize the service.
       $rootScope.$on('layer-added', function(event, layer) {
@@ -118,17 +136,202 @@
       });
 
       // when a box is added, reinitialize the service.
-      $rootScope.$on('box-added', function(event, box) {
-        console.log('----[ timelineService, box added. initializing', box);
-        boxes_ = boxService_.getBoxes();
+      $rootScope.$on('box-added', function(event, chapter_index) {
+        console.log('----[ timelineService, box added. initializing');
+        boxes_ = boxService_.getBoxes(chapter_index);
         service_.initialize();
       });
 
       // when a box is removed, reinitialize the service.
-      $rootScope.$on('boxRemoved', function(event, box) {
-        console.log('----[ timelineService, box removed. initializing', box);
-        boxes_ = boxService_.getBoxes();
+      $rootScope.$on('box-removed', function(event, chapter_index) {
+        console.log('----[ timelineService, box removed. initializing');
+        boxes_ = boxService_.getBoxes(chapter_index);
         service_.initialize();
+      });
+
+      $rootScope.$on('startFeatureInsert', function(event) {
+        if (service_.isPlaying()) {
+          service_.stop();
+        }
+      });
+
+      $rootScope.$on('begin-edit', function(event) {
+        if (service_.isPlaying()) {
+          service_.stop();
+        }
+      });
+
+      $rootScope.$on('chapter-switch', function(event, chapter_index) {
+        console.log('----[ timelineService, chapter switch. initializing', chapter_index);
+        boxes_ = boxService_.getBoxes(chapter_index);
+        pins_ = pinService_.getPins(chapter_index);
+        pinsForMap_ = $filter('filter')(pins_, { values_: {in_map: true} });
+        if (service_.isPlaying()) {
+          service_.stop();
+        }
+        service_.initialize();
+      });
+
+      $rootScope.$on('chapter-added', function(event, chapter_index) {
+        console.log('----[ timelineService, chapter add. initializing', chapter_index);
+        boxes_ = boxService_.getBoxes(chapter_index);
+        pins_ = pinService_.getPins(chapter_index);
+        service_.initialize();
+      });
+
+      $rootScope.$on('pin-added', function(event, chapter_index) {
+        console.log('----[ timelineService, pin added. initializing');
+        pins_ = pinService_.getPins(chapter_index);
+        mapService_.map.removeLayer(mapService_.pinLayer);
+        pinsForMap_ = $filter('filter')(pins_, { values_: {in_map: true} });
+        service_.initialize();
+      });
+
+      $rootScope.$on('pin-removed', function(event, chapter_index) {
+        console.log('----[ timelineService, pin removed. initializing');
+        pins_ = pinService_.getPins(chapter_index);
+        pinsForMap_ = $filter('filter')(pins_, { values_: {in_map: true} });
+        service_.initialize();
+        if (pinsForMap_.length === 0) {
+          mapService_.map.removeLayer(mapService_.pinLayer);
+        }
+      });
+
+      $rootScope.$on('endFeatureInsert', function(event, save, layer, newFeature) {
+        if (goog.isDefAndNotNull(save) && save === true && goog.isDefAndNotNull(layer) && goog.isDefAndNotNull(newFeature)) {
+          var metadata = layer.get('metadata');
+          var timeDimension = service_.getTimeDimension(layer);
+          var addedTick = false;
+          var newTick = null;
+          var newDate = null;
+          //Only add a tick on time enabled layers
+          var numDates = 0;
+          var firstDate = null;
+          if (goog.isDefAndNotNull(timeDimension)) {
+            for (var property in newFeature.properties) {
+              var test = newFeature.properties[property];
+              var type = typeof(test);
+              //Date properties are passed via string representation
+              if (type === 'string' && stutils.getTime(test) != null) {
+                numDates += 1;
+                if (firstDate === null) {
+                  firstDate = test;
+                }
+              }
+            }
+            if (numDates > 0) {
+              //Need to add a tick somehow
+              if (numDates === 1) {
+                newDate = firstDate;
+                newTick = stutils.getTime(newDate);
+                if (newTick !== null && !(newTick in timelineTicksMap_)) {
+                  timelineTicksMap_[newTick] = 1;
+                  addedTick = true;
+                }
+              } else {
+                //TODO: Need to make admin geoserver request and add resulting tick from there.
+
+              }
+              if (!goog.isDefAndNotNull(metadata.timelineTicks)) {
+                metadata.timelineTicks = [newDate];
+              } else {
+                metadata.timelineTicks.push(newDate);
+              }
+              if (addedTick === true) {
+                timelineTicks_ = Object.getOwnPropertyNames(timelineTicksMap_).map(function(t) {
+                  return parseInt(t, 10);
+                });
+                if (timelineTicks_.length > 0) {
+                  timelineTicks_ = timelineTicks_.sort(function(a, b) {
+                    return a - b;
+                  });
+                  var index = service_.timeToTick(currentTime_);
+                  service_.setTimeTickIndex(index);
+                }
+                rootScope_.$broadcast('timeline-initialized');
+              }
+            }
+
+          }
+
+        }
+
+      });
+
+      // when a feature of a layer is edited, if the value of the attribute used as the time dimension changes,
+      // we need to update the tick marks on the timeline and perhaps set current time to the new time.
+      //
+      // However, there is a problem. getCapabilities only returns whether there is a time dimension and if so, the values
+      // of the time dimension. It doesn't specify which attribute of the layer was used to derive the time dimension.
+      // To get the name of the attribute that was used to generate the time dimension, we need to use the rest endpoint
+      // which is an admin-only endpoint.
+      // rest enpoint where the attribute name can be found (when admin):
+      // http:.../geoserver/rest/workspaces/<workspaces>/datastores/<datastore>/featuretypes/<layerName>.json
+      //
+      // another problem is firing another get capability every time a feature is edited.
+      // okay workaround for now is to add a tick mark when *any* date attribute of the feature changes so long as the
+      // old value was in the timeline values. This leaves the possibility of more ticks being added than should be but
+      // they will will be temporary and when the map is reloaded, any potentially extra/'wrong' ticks will not be there
+      // and new proper ones will be there.
+      $rootScope.$on('endAttributeEdit', function(event, save, layer, changedAttributesNew, changedAttributesOld) {
+        if (goog.isDefAndNotNull(save) && save === true) {
+          var metadata = layer.get('metadata');
+          var ticksChanged = false;
+          var i = 0;
+          var attributeType = '';
+
+          //TODO: if the old time tick is not found, then attr must have not been used to generate time dimension.
+          //      dont add tick!
+          // remove old tick marks if changes to the feature doesn't leave any feature for that time slice.
+          var foundOldTick = false;
+          for (i = 0; i < changedAttributesOld.length; i++) {
+            attributeType = metadata.schema[changedAttributesOld[i][0]]._type.toLowerCase();
+            if (attributeType.indexOf('date') !== -1 || attributeType.indexOf('time') !== -1) {
+              if (changedAttributesOld[i][1] in timelineTicksMap_) {
+                foundOldTick = true;
+                if (timelineTicksMap_[changedAttributesOld[i][1]] > 1) {
+                  timelineTicksMap_[changedAttributesOld[i][1]] -= 1;
+                } else {
+                  ticksChanged = true;
+                  delete timelineTicksMap_[changedAttributesOld[i][1]];
+                }
+              }
+            }
+          }
+
+          // if no old tick mark found for this time change, do not add a new tick mark as it must have not been for the
+          // attribute that was originally used to create
+          if (foundOldTick === true) {
+            // add new tick marks
+            for (i = 0; i < changedAttributesNew.length; i++) {
+              attributeType = metadata.schema[changedAttributesNew[i][0]]._type.toLowerCase();
+              if (attributeType.indexOf('date') !== -1 || attributeType.indexOf('time') !== -1) {
+                if (changedAttributesNew[i][1] in timelineTicksMap_) {
+                  timelineTicksMap_[changedAttributesNew[i][1]] += 1;
+                } else {
+                  timelineTicksMap_[changedAttributesNew[i][1]] = 1;
+                  ticksChanged = true;
+                }
+              }
+            }
+          }
+
+
+          if (ticksChanged === true) {
+            timelineTicks_ = Object.getOwnPropertyNames(timelineTicksMap_).map(function(t) {
+              return parseInt(t, 10);
+            });
+            if (timelineTicks_.length > 0) {
+              timelineTicks_.sort();
+
+              // use what the timeline's time was. changing to the updated time of feature can be problematic because
+              // we dont know for sure if the field being changed was used to generate the time dimension.
+              var index = service_.timeToTick(currentTime_);
+              service_.setTimeTickIndex(index);
+            }
+            rootScope_.$broadcast('timeline-initialized');
+          }
+        }
       });
 
       return service_;
@@ -136,7 +339,7 @@
 
     this.initialize = function() {
       // TODO: only re-init if list of layers time enabled layers change.
-      var uniqueTicks = {};
+      timelineTicksMap_ = {};
       var layersWithTime = 0;
       var layersWithTimeList = [];
       timelineGroupsList_ = [];
@@ -157,52 +360,18 @@
             layersWithTimeList.push(layer);
 
             for (var j = 0; j < timeDimension.length; j++) {
-              if (goog.isDefAndNotNull(uniqueTicks[timeDimension])) {
-                uniqueTicks[timeDimension[j]] += 1;
+              var time = stutils.getTime(timeDimension[j]);
+              if (goog.isDefAndNotNull(timelineTicksMap_[time])) {
+                timelineTicksMap_[time] += 1;
               } else {
-                uniqueTicks[timeDimension[j]] = 1;
-                var id_ = i + ':' + j;
-                timelinePointsList.push({id: id_,
-                  group: metadata.uniqueID,
-                  content: "<img src='" + metadata.styles[0].legendUrl + "&TRANSPARENT=true' />",
-                  start: timeDimension[j],
-                  type: 'box' });
+                timelineTicksMap_[time] = 1;
               }
             }
           }
         }
       }
 
-
-      var ticks = computeTicks(layersWithTimeList);
-      timelineTicks_ = ticks;
-      var r;
-      var options = { 'data': ticks };
-      // make a default box if none provided
-      if (typeof boxes == 'undefined' || boxes.length === 0) {
-        var interval = 0, data = null;
-        if (Array.isArray(options.data)) {
-          data = options.data;
-          r = stutils.computeRange(options.data);
-          range_ = r;
-          interval = stutils.pickInterval(r);
-        } else {
-          interval = options.data.interval || stutils.pickInterval(options.data);
-          r = options.data;
-        }
-
-        box_ = [{
-          data: data,
-          range: r,
-          speed: {
-            interval: interval,
-            seconds: 3
-          }
-        }];
-      }
-
-
-      var boxes_as_layers = [];
+      timelineTicks_ = computeTicks(layersWithTimeList);
 
       if (boxes_.length > 0) {
         for (var c = 0; c < boxes_.length; c++) {
@@ -217,15 +386,29 @@
             end: (new Date(boxes_[c].end_time)).toISOString(),
             type: 'background'
           });
+        }
+      } else {
+        range_ = stutils.createRange(timelineTicks_[0], timelineTicks_[timelineTicks_.length - 1]);
+      }
 
-          boxes_as_layers.push({ 'metadata': { 'dimensions': [{'name': 'time', 'values': [
-                              (new Date(boxes_[c].start_time)).toISOString(),
-                              (new Date(boxes_[c].end_time)).toISOString()
-                            ]}]}});
+      var pinsForTimeline = filter_('filter')(pins_, { values_: {in_timeline: true} });
+
+      if (pinsForTimeline.length > 0) {
+        for (var iPin = 0; iPin < pinsForTimeline.length; iPin++) {
+          var pin_range = stutils.createRange(pinsForTimeline[iPin].start_time, pinsForTimeline[iPin].end_time);
+          console.log('----[ Info: Pin Range ', pin_range.toString());
+          console.log('----[ Info: Total Range ', range_.toString());
+          timelinePointsList.push({
+            id: 'sp' + iPin,
+            content: pinsForTimeline[iPin].title,
+            start: (new Date(pinsForTimeline[iPin].start_time)).toISOString(),
+            end: (new Date(pinsForTimeline[iPin].end_time)).toISOString(),
+            type: 'background'
+          });
         }
       }
 
-      if (layersWithTime > 0 || boxes_.length > 0) {
+      if (layersWithTime > 0 || boxes_.length > 0 || pinsForTimeline.length > 0) {
         rootScope_.timelineServiceEnabled = true;
         mapService_.showTimeline(true);
       } else {
@@ -246,11 +429,10 @@
     this.setFilterByTime = function(filterByTime) {
       if (goog.isDefAndNotNull(filterByTime) && filterByTime === true) {
         filterByTime_ = true;
-        service_.updateLayersTimes(currentTickIndex_);
       } else {
         filterByTime_ = false;
-        service_.updateLayersTimes();
       }
+      service_.updateLayersTimes({ start: timelineTicks_[0], end: timelineTicks_[currentTickIndex_]});
     };
 
     this.getRepeat = function() {
@@ -320,15 +502,14 @@
       if (!goog.isDefAndNotNull(timelineTicks_) || timelineTicks_.length === 0 || !goog.isDefAndNotNull(time)) {
         return null;
       }
-      var timeStr = (new Date(time)).toISOString();
       var index = null;
 
       //TODO: use binary search and consider caching time objects on timeline.initialize instead of string compare
-      if (timelineTicks_[timelineTicks_.length - 1] === timeStr) {
+      if (timelineTicks_[timelineTicks_.length - 1] === time) {
         index = timelineTicks_.length - 1;
       } else {
         for (var j = 1; j < timelineTicks_.length; j++) {
-          if (timeStr < timelineTicks_[j]) {
+          if (time < timelineTicks_[j]) {
             index = j - 1;
             break;
           }
@@ -336,7 +517,7 @@
       }
 
       if (!goog.isDefAndNotNull(index)) {
-        console.log('====[ ERROR: timeToTick could not find tick for the provided time: ', timeStr, ', min: ', timelineTicks_[0], ', max: ', timelineTicks_[timelineTicks_.length - 1]);
+        console.log('====[ ERROR: timeToTick could not find tick for the provided time: ', time, ', min: ', timelineTicks_[0], ', max: ', timelineTicks_[timelineTicks_.length - 1]);
       }
 
       return index;
@@ -373,6 +554,21 @@
       }
 
       return index;
+    };
+
+    this.setZoomCurrent = function(time) {
+      if (!goog.isDefAndNotNull(time)) {
+        return;
+      }
+
+      for (var i = 0; i < boxes_.length; i++) {
+        var range = stutils.createRange(boxes_[i].get('start_time'), boxes_[i].get('end_time'));
+        if (range.intersects(time)) {
+          mapService_.zoomToExtent(boxes_[i].get('extent'));
+          break;
+        }
+      }
+
     };
 
     this.setTimeCurrent = function(time) {
@@ -443,13 +639,15 @@
         } else {
           currentTime_ = timelineTicks_[currentTickIndex_];
         }
-        service_.updateLayersTimes(currentTickIndex_);
+        service_.updateLayersTimes({ start: timelineTicks_[0], end: timelineTicks_[currentTickIndex_]});
       } else {
         currentTime_ = null;
         currentTickIndex_ = null;
       }
 
-      featureManagerService_.hide();
+      if (showingPin === false) {
+        featureManagerService_.hide();
+      }
 
       console.log('---- timelineService.time updated: ', (new Date(currentTime_)).toISOString());
       rootScope_.$broadcast('timeline-timeupdated', currentTime_);
@@ -492,7 +690,7 @@
 
     // only set layer time based on ticks to avoid generating a lot of requests for times that
     // do not have data associated with them
-    this.updateLayersTimes = function(tickIndex) {
+    this.updateLayersTimes = function(range) {
       // TODO: skipping hidden layers. listen for when a layer is made visible, to force a refresh
       var layers = mapService_.getLayers(false, true);
       for (var i = 0; i < layers.length; i++) {
@@ -502,20 +700,69 @@
           var source = layer.getSource();
           if (goog.isDefAndNotNull(source)) {
             if (goog.isDefAndNotNull(source.updateParams)) {
-              if (filterByTime_) {
-                if (goog.isDefAndNotNull(timelineTicks_) && tickIndex < timelineTicks_.length && tickIndex >= 0) {
-                  source.updateParams({
-                    TIME: new Date(timelineTicks_[tickIndex]).toISOString()
-                  });
+              var start = new Date(range.start).toISOString();
+              var end = new Date(range.end).toISOString();
+              var time = end;
+              if (!filterByTime_) {
+                if (start != end) {
+                  time = start + '/' + end;
                 }
-              } else {
-                source.updateParams({
-                  TIME: '-99999999999-01-01T00:00:00.0Z/99999999999-01-01T00:00:00.0Z'
-                });
               }
+              source.updateParams({
+                TIME: time
+              });
             }
           }
         }
+      }
+
+      if (pinsForMap_.length > 0) {
+        this.updatePinsTimes(range);
+      }
+
+
+    };
+
+    this.updatePinsTimes = function(range) {
+      var features = [];
+
+      if (this.getFilterByTime()) {
+        //Instant playback the range should just be the end (current time)
+        var instant_range = stutils.createRange(range.end, range.end + 1);
+        range = instant_range;
+      }
+
+      for (var iPin = 0; iPin < pinsForMap_.length; iPin += 1) {
+        var pin = pinsForMap_[iPin];
+        var pinRange = stutils.createRange(pin.start_time, pin.end_time);
+        if (pinRange.intersects(range)) {
+          features.push(pin);
+        }
+      }
+
+      if (features.length > 0) {
+        mapService_.map.removeLayer(mapService_.pinLayer);
+        mapService_.pinLayer.getSource().clear(true);
+        mapService_.pinLayer.getSource().addFeatures(features);
+        mapService_.map.addLayer(mapService_.pinLayer);
+        var layerInfo = {};
+        var pinsToDisplay = [];
+        for (var iFinal = 0; iFinal < features.length; iFinal += 1) {
+          if (features[iFinal].auto_show === true) {
+            pinsToDisplay.push(features[iFinal]);
+          }
+        }
+        if (pinsToDisplay.length > 0) {
+          showingPin = true;
+          layerInfo.features = pinsToDisplay;
+          layerInfo.layer = mapService_.pinLayer;
+          var position = pinsToDisplay[0].values_.geometry.flatCoordinates;
+          featureManagerService_.show(layerInfo, position);
+        }
+      } else {
+        showingPin = false;
+        mapService_.map.removeLayer(mapService_.pinLayer);
+        mapService_.pinLayer.getSource().clear(true);
       }
     };
 
@@ -523,7 +770,7 @@
       var timeDimension = null;
       if (goog.isDefAndNotNull(layer)) {
         var metadata = layer.metadata || layer.get('metadata');
-        if (goog.isDefAndNotNull(metadata) && goog.isDefAndNotNull(metadata.dimensions)) {
+        if (goog.isDefAndNotNull(metadata) && goog.isDefAndNotNull(metadata.dimensions) && !goog.isDefAndNotNull(metadata.timelineTicks)) {
           for (var index = 0; index < metadata.dimensions.length; index++) {
             var dimension = metadata.dimensions[index];
             if (dimension.name === 'time') {
@@ -537,12 +784,14 @@
                 timeDimension = [];
                 console.log('====[[ time interval not supported yet');
               } else {// if (typeof(dimensions.values) is []) {
-                timeDimension = dimension.values;
+                timeDimension = [dimension.values];
                 console.log(typeof(dimension.values));
               }
               break;
             }
           }
+        } else {
+          timeDimension = metadata.timelineTicks;
         }
       }
       return timeDimension;

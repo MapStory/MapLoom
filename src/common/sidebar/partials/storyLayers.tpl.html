@@ -1,0 +1,27 @@
+<div class="topText"><a href="#" ng-click="updateMenuSection('mainMenu')">{{ 'Index' | translate:'Index' }}</a> > <a href="#" ng-click="updateMenuSection('selectedChapter' + chapter.id)">{{ chapter.chapter }}</a></div>
+<div class="bottomText">StoryLayers</div>
+
+<div class="menuItem">
+    <i class="fa fa-angle-left pull-left"></i>
+    <a href="#" ng-click="updateMenuSection('selectedChapter' + chapter.id); updateTourStep(13)">Back to Selected Chapter</a>
+</div>
+<a href="#add-layer-dialog" class="menuItem" data-toggle="modal" id="addNewStoryLayerButton">Add a New StoryLayer...
+</a>
+
+<div class="layer-container" ui-tree="layerTree" id="storyLayersList">
+    <div ui-tree-nodes ng-model="storyLayers">
+        <div ng-repeat="storyLayer in storyLayers" ui-tree-node>
+            <div class="menuItem">
+                <i class="fa fa-navicon" ui-tree-handle></i>
+                <i ng-click="storyService.toggleVisiblity(storyLayer)"
+                   ng-class="{'fa fa-eye': storyLayer.get('visible'), 'fa fa-eye-slash': !storyLayer.get('visible')}" tooltip-append-to-body="true" tooltip-placement="right" tooltip="{{ 'storylayer_visibility_tooltip' | translate }}"></i>
+                <a href="#"
+                   ng-click="storyService.selectLayer(storyLayer);updateMenuSection('editStoryLayer' + chapter.id + storyLayers.id); updateTourStep(8)">
+                    {{ layerService.getTitle(storyLayer) }}
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- <h5 class="text-right"><a href="http://wiki.mapstory.org/wiki/MapStory_Composer#Adding_StoryLayers" target="_blank">StoryLayers Help</a></h5>-->

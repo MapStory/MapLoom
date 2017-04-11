@@ -1,219 +1,44 @@
-.loom-notification-poster {
-	position:absolute;
-	.z-index(@menuLevel);
-	left:325px;
-}
+/* Generic Classes */
 
 html, body {
-  -webkit-user-select: none;                  /* prevent copy paste, to allow, change 'none' to 'text' */
-  margin  : 0;
-  padding : 0;
-  height  : 100%;
-  width   : 100%;
-  font: @mainFont;
+  -webkit-user-select: none;
   color: @mainFontColor;
-  /* width   : 100%; */
-}
-
-#pulldown {
-	position: absolute;
-	left: 0;
-	width: 320px;
-    .z-index(@menuLevel);
-	top: 0;
-}
-
-#pulldown .panel {
-	margin: 0;
-	border: 0;
-	font-weight: normal;
-	overflow: visible;
-	background-color:@mainPanelColor;
-}
-
-.panel-body {
-	padding: 0 15px;
-}
-
-.map-title-text {
-  width: 80%;
-  display: inline-block;
-}
-
-#pulldown-content .panel-heading {
-	background-color: @mainHeaderColor;
-	color: @mainHeaderFontColor;
-	display: block;
-	text-decoration: none;
-	border-top: 1px solid darken(@mainPanelColor, 5%);
-
-  .panel-header-button {
-    font-size: 17px;
-    position: relative;
-    top: -2px;
-    padding-left: 5px;
-  }
-
-  .pulldown-menu-title {
-    width: 82%;
-    float: left;
-  }
-}
-
-.fixed-height-header {
-  height: 37px;
-}
-
-#pulldown-content {
-	max-height: 80%;
-}
-
-.modal-open {
-  body&,
-  .navbar-fixed-top,
-  .navbar-fixed-bottom {
-    margin-right: 0px;
-  }
-}
-
-.tooltip-mask {
-  position: absolute;
+  font: @mainFont;
+  height: 100%;
+  margin: 0;
+  padding: 0;
   width: 100%;
-  height: 40px;
 }
 
-.has-error .form-control {
-  border-color: #b94a48 !important;
+h2 {
+  color: @baseGray;
+  font-family: @mainFontFamily;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 20px;
+  margin: 0;
+  padding: 0;
 }
 
-#add-layer-dialog .modal-dialog{
-  width: 414px;
+label {
+  cursor: default;
 }
 
-#layerInfoDialog .modal-dialog {
-  width: 450px;
+a {
+  color: #000;
 }
 
-#attribute-edit-dialog .modal-dialog{
-  width: 450px;
+textarea {
+  resize: vertical;
 }
 
-#feature-diff-dialog .modal-dialog {
-  max-height: 100%;
-  overflow: hidden;
+i {
+  color: @baseWhite;
+  cursor: pointer;
 }
 
-#pulldown-shadow {
-  position: relative;
-  .z-index(@menuLevel);
-	.box-shadow(0 0 20px rgba(0, 0, 0, 0.4));
-}
-
-.toggle-menu {
-  .box-shadow(0 0 20px rgba(0, 0, 0, 0.4));
-  .z-index(@mapLevel);
-  position:relative;
-  top: -1px;
-}
-
-.notification-panel-heading {
-    background-color: @notificationHeaderColor !important;
-}
-
-.panel {
-	margin: 0;
-	border: 0;
-	font-weight: normal;
-	/*overflow: visible;*/
-	background-color:@mainPanelColor;
-}
-
-.panel-group .panel-heading + .panel-collapse .panel-body{
-	border-top: 1px solid darken(@mainPanelColor, 5%);
-
-}
-.close {
-	color:@closeImageColor;
-}
-.flat {
-	border-radius: 0;
-}
-
-hr {
-	border-top: 1px solid darken(@mainPanelColor, 5%);
-}
-
-#map-title{
-  .panel-heading{
-    font-size: 20px;
-    font-weight: 100;
-    padding-bottom: 2px;
-  }
-
-   i{
-    color: @saveIconColor;
-    cursor: pointer;
-  }
-
-  #saveButton:before{
-    content: @saveIcon;
-    padding-left: 5px;
-  }
-  #refreshButton:before{
-    content: @refreshIcon;
-    padding: 2px;
-  }
-}
-
-.refreshing-map {
-  color: @refreshIconColor !important;
-  background-color: @mainHeaderColor;
-  border-radius: 3px;
-  padding-bottom: 4px;
-}
-
-/* Overwriting these because the default rounded corners didn't look quite right */
-.panel-heading, .flat-top {
-	border-top-left-radius: 0;
-	border-top-right-radius: 0;
-}
-
-#layer-panel a.accordion-toggle {
-	display: inline-block;
-}
-
-.badge {
-    background-color: @badgeColor;
-    color:@badgeFontColor;
-    font-size: 14px;
-    padding:5px 10px;
-    border-radius: 20px;
-}
-
-#pulldown-content .badge {
-    position: relative;
-    top: -4px;
-}
-
-.list-group {
-    margin-bottom:0;
-}
-
-.list-group-item {
-	background-color:@mainListItemColor;
-	border: 1px solid darken(@mainListItemColor, 5%);
-}
-
-.notification-text {
-    margin: 0;
-}
-
-.notification-panel-heading {
-    font-weight:900;
-}
-
-.notification-panel-heading.read {
-    font-weight:100;
+i:hover {
+  color: @baseOrange;
 }
 
 ul {
@@ -222,9 +47,44 @@ ul {
   overflow-y: auto;
 }
 
-.btn .caret {
-  margin-top: 0;
-  vertical-align: middle;
+.loom-notification-poster {
+  left: 325px;
+  position: absolute;
+}
+
+.panel-body {
+  background: #dcdcdc;
+  margin: 10px;
+  padding: 10px;
+}
+
+.has-error .form-control {
+  border-color: #b94a48;
+}
+
+#add-layer-dialog .modal-dialog {
+  width: 80%;
+}
+
+#feature-diff-dialog .modal-dialog {
+  max-height: 100%;
+  overflow: hidden;
+}
+
+.panel {
+  background: @mainPanelColor;
+  border: 0;
+  font-weight: 400;
+  margin: 0;
+}
+
+.close {
+  color: gray;
+}
+
+.panel-heading, .flat-top {
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
 }
 
 .dropdown-menu .divider {
@@ -233,70 +93,451 @@ ul {
 
 .btn-group li {
   border-bottom: none;
-  text-transform: none;
   margin: 0;
-}
-
-.btn-group li a {
-  border-radius: 0;
-}
-
-label {
-  cursor: default;
-}
-
-a {
-  color: black;
-}
-
-textarea {
-  resize: vertical;
+  text-transform: none;
 }
 
 .form-horizontal .control-label {
   float: none;
-  width: inherit;
   font-size: inherit;
   line-height: inherit;
-}
-
-.popover {
-  max-width: 400px;
-  .z-index(@dialogLevel, 5);
-  .content-container {
-    overflow: hidden;
-    overflow-y: auto;
-    max-height: 200px;
-  }
-  .popover-label {
-    display: block;
-    margin: 0;
-    padding: 0;
-    font: @featureInfoBoxLabelFont;
-    color: @featureInfoBoxLabelFontColor;
-    word-wrap: break-word;
-  }
-
-  .popover-value {
-    display: block;
-    margin: 0;
-    padding: 0 0 7px;
-    font: @featureInfoBoxValueFont;
-    white-space: normal;
-    word-wrap: break-word;
-  }
+  width: inherit;
 }
 
 .well {
-  background-color: darken(@defaultModalPanelColor, 5%);
+  background: darken(@defaultModalPanelColor, 5%);
   border: 1px solid darken(@defaultModalPanelColor, 6%);
   word-wrap: break-word;
 }
 
-#server-loading {
-  .loading-container {
-    position: relative !important;
-    top: 7px !important;
-    left: -10px !important;
-  }
+#pushobj {
+  float: right;
+  height: 100%;
+  width: 80%;
+}
+
+/* Composer Forms */
+
+.form-composer {
+  background: @background;
+  border: none;
+  border-radius: 2px;
+  color: @baseGray;
+  display: block;
+  font-size: 12px;
+  height: 34px;
+  line-height: 1.428571429;
+  padding: 6px;
+  vertical-align: middle;
+  width: 100%;
+}
+
+.form-composer:focus {
+  background: @baseGray;
+  color: @baseWhite;
+  outline: none;
+}
+
+/* Hopskotch Styles */
+
+.hopscotch-icon {
+  border: none;
+  display: inline-block;
+  height: 50px;
+  margin: 15px;
+  position: relative;
+  text-align: center;
+  width: 50px;
+  z-index: 1;
+}
+
+div.hopscotch-bubble .hopscotch-bubble-close {
+  background: url(https://res.cloudinary.com/dw1zyrzc5/image/upload/v1461961248/sprite-green_tzixrt.png) no-repeat -192px -92px;
+}
+
+/* Modal Styles */
+
+.modal .modal-header, .loom-dialog.dialog-warning .modal-header {
+  background: @background;
+  border-bottom: 0;
+  border-top-left-radius: 4px;
+  border-top-right-radius: 4px;
+  color: #444;
+  padding: 15px;
+  text-align: center;
+}
+
+.loom-dialog.dialog-warning .modal-body, .modal .modal-body, .loom-dialog.dialog-warning .modal-footer {
+  background: @baseWhite;
+  max-height: 60vh;
+  overflow-y: auto;
+  padding: 20px 30px;
+}
+
+.loom-dialog {
+  left: 10%;
+  position: absolute;
+  top: 90%;
+  width: 80%;
+}
+
+.modal .modal-footer {
+  -webkit-box-shadow: none;
+  background: @baseWhite;
+  border: none;
+  box-shadow: none;
+  margin-top: 0;
+}
+
+.modal-title {
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 20px;
+  margin: 0;
+  padding: 0;
+}
+
+.modal-body label {
+  display: inline-block;
+  font-size: .8em;
+  font-weight: 700;
+  margin-bottom: 5px;
+}
+
+/* Card Styles */
+
+.cards {
+  border: 0;
+  font-weight: 400;
+  margin: 0;
+}
+
+.cards-body {
+  background: @background;
+  border: transparent;
+  border-radius: 4px;
+  height: 350px;
+  margin: 25px 15px 15px;
+  overflow-y: scroll;
+  padding: 15px;
+}
+
+.cards-body.h5 {
+  overflow: hidden;
+}
+
+#mapstory-title {
+  color: @baseGray;
+  font-size: 1em;
+  padding: 0 0 5px;
+}
+
+.angular-ui-tree-node, .angular-ui-tree-placeholder {
+  margin: 0;
+  min-height: 0;
+  padding: 0;
+}
+
+.angular-ui-tree-nodes .angular-ui-tree-nodes {
+  padding-left: 0;
+}
+
+/* Welcome Tour Styles */
+
+a#start-tour, a#start-composing, a#resume-draft {
+  color: @baseGray;
+  font-size: 18px;
+  font-weight: 700;
+  padding: 20px;
+  text-align: center;
+}
+
+a#start-tour:hover, a#start-composing:hover, a#resume-draft:hover {
+  color: @baseOrange;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+a.carousel-control {
+  display: none;
+}
+
+.search-btn {
+  background: @baseGray;
+  border-color: @baseGray;
+}
+
+#welcomeTour .modal-dialog {
+  left: 50%;
+  padding-bottom: 30px;
+  padding-top: 75px;
+  right: auto;
+  width: 600px;
+}
+
+/* Feature Info Box StoryPin Styles */
+
+.feature-info-box-popup {
+  background: @accentWhite;
+  border-radius: 4px;
+  bottom: 12px;
+  color: @baseGray;
+  display: block;
+  font-size: 10px;
+  left: -50px;
+  min-width: 180px;
+  padding: 0 10px 10px;
+  position: absolute;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.feature-info-box-popup:after {
+  border-top-color: @accentWhite;
+  border-width: 10px;
+  left: 48px;
+  margin-left: -10px;
+}
+
+.info-box-title {
+  color: @baseGray;
+  display: inline-block;
+  font: bold 13px 'Open Sans', sans-serif;
+  padding: 5px 0;
+  text-transform: uppercase;
+  width: 75%;
+  word-wrap: break-word;
+}
+
+.info-box-attribute {
+  border-bottom: 1px solid @baseGray;
+  color: @baseGray;
+  display: block;
+  font: bold 10px 'Open Sans', sans-serif;
+  margin: 0;
+  padding: 0;
+  text-transform: lowercase;
+  word-wrap: break-word;
+}
+
+.info-box-attribute-value {
+  color: #bbb;
+  display: block;
+  font: normal 12px sans-serif;
+  margin: 0;
+  padding: 0 0 7px;
+  text-align: right;
+  text-transform: capitalize;
+  white-space: normal;
+  word-wrap: break-word;
+}
+
+style-editor button {
+  font-size: 14px;
+  padding: 6px 12px;
+}
+
+.style-editor-item {
+  background: @background;
+  border: 0;
+  border-radius: 3px;
+  margin-bottom: 5px;
+  padding: 3px;
+}
+
+.style-editor-item .title {
+  color: @baseGray;
+  display: inline-block;
+  font-family: 'Open Sans', sans-serif;
+  font-size: 10px;
+  font-weight: 400;
+  line-height: 12px;
+  max-width: 100%;
+  padding-left: 5px;
+  text-transform: uppercase;
+}
+
+.style-editor-item .controls {
+  padding-bottom: 3px;
+}
+
+.style-editor-item .controls > * {
+  margin: 2px;
+}
+
+.style-editor-item button {
+  padding: 1px 5px;
+}
+
+.style-editor-item button, .style-editor-item .controls input {
+  background: @background;
+  border: 0;
+  border-radius: 4px;
+  color: @baseGray;
+  cursor: pointer;
+  display: inline-block;
+  font-size: 10px;
+  height: 30px;
+  line-height: 12px;
+  margin: 0;
+  padding: 2px 10px;
+  text-align: center;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.panelContainer .panelRow .loom-feature-panel {
+  background: @accentWhite;
+  border: 0;
+  display: table-cell;
+  padding-top: 5px;
+  position: relative;
+  vertical-align: top;
+  width: 230px;
+}
+
+.panelContainer .panelRow .loom-panel-separator {
+  background: @accentWhite;
+  border: 0;
+  display: table-cell;
+  padding-top: 5px;
+  width: 32px;
+}
+
+.panelContainer .panelRow .loom-feature-panel .info-box-attribute {
+  border: 0;
+  color: @baseGray;
+  height: 15px;
+  text-transform: lowercase;
+}
+
+.panelContainer .panelRow .loom-panel-separator .attribute-arrow .attribute-arrow-inner {
+  background: @lightGray;
+  border: 0;
+  border-radius: 3px;
+  padding: 5px 5px 8px;
+  top: 18px;
+}
+
+.panelContainer .panelRow .loom-panel-separator .arrow-inactive {
+  color: #888;
+}
+
+.editorForm {
+  padding: 10px;
+}
+
+.carousel {
+  margin: 0 0 10px;
+  position: relative;
+}
+
+.attribute-cell {
+  background: @background;
+  border-radius: 4px;
+  color: @baseGray;
+  font-size: .8em;
+  margin-bottom: 10px;
+  padding: 5px;
+  text-transform: uppercase;
+}
+
+.help-block {
+  color: @baseGray;
+  display: block;
+  font-size: .6em;
+  margin-bottom: 10px;
+  margin-top: 5px;
+  padding-left: 10px;
+}
+
+#chapterSummary {
+  height: 10em;
+}
+
+.btn-composer.togglePlayback {
+  font-size: 10px;
+  line-height: 1.428571429;
+  color: #fff;
+  margin: 1.5px 0;
+}
+
+/* Table Styles */
+
+#table-view-window .panel {
+  background: @accentWhite;
+  height: 100%;
+  max-width: 100%;
+  overflow: auto;
+}
+
+.table-striped > thead > tr > th {
+  border-bottom: 2px solid @tableBorder;
+  font-size: .8em;
+  font-weight: 600;
+  padding: 10px;
+  text-transform: uppercase;
+}
+
+.table-striped > tbody > tr > td, .table-striped > thead > tr > th {
+  border-left: 1px dotted @tableBorder;
+  font-size: .7em;
+  max-width: 200px;
+  overflow: hidden;
+  padding: 3px 10px;
+  text-overflow: ellipsis;
+}
+
+.table-striped > tbody > tr > td {
+  border-top: 1px solid @tableBorder;
+  color: @baseGray;
+  font-size: .8em;
+}
+
+.selectedRow > td {
+  background: @baseOrange !important;
+  color: @accentWhite;
+}
+
+#add-box-dialog .modal-dialog, #add-pin-dialog .modal-dialog {
+  width: 414px;
+}
+
+#layerInfoDialog .modal-dialog, #attribute-edit-dialog .modal-dialog {
+  width: 450px;
+}
+
+.panel-group .panel-heading + .panel-collapse .panel-body, hr {
+  border-top: 1px solid darken(@mainPanelColor, 5%);
+}
+
+.flat, .btn-group li a {
+  border-radius: 0;
+}
+
+#layer-panel a.accordion-toggle, #sidebarDropdown {
+  display: inline-block;
+}
+
+.menuHidden #composerIconNav, #welcomeTour .close, #mapProperties .close {
+  display: none;
+}
+
+.panelContainer .panelRow .loom-feature-panel input.attr-none, .panelContainer .panelRow .loom-feature-panel .attr-none input {
+  background: @lightGray;
+  border: 0;
+  cursor: auto;
+  width: 98%;
+}
+
+.panelContainer .panelRow .loom-feature-panel .attr-added input, .panelContainer .panelRow .loom-feature-panel input.attr-added {
+  background: @background;
+  border: 0;
+  color: @attributeAdded;
+}
+
+.panelContainer .panelRow .loom-feature-panel .attr-removed input, .panelContainer .panelRow .loom-feature-panel input.attr-removed {
+  background: @background;
+  border: 0;
+  color: @attributeRemoved;
 }

@@ -1,11 +1,12 @@
 (function() {
   var module = angular.module('loom_box_service', []);
-  var boxes_ = [];
+  var stutils = storytools.core.time.utils;
+  var boxes_ = [[]];
   var service_ = null;
   var rootScope_ = null;
-  var pulldownService_ = null;
-  var q_ = null;
   var httpService_ = null;
+  var dialogService_ = null;
+  var translate_ = null;
   var Box = function(data) {
     ol.Feature.call(this, data);
     this.start_time = getTime(this.start_time);
@@ -13,7 +14,8 @@
   };
   Box.prototype = Object.create(ol.Feature.prototype);
   Box.prototype.constructor = Box;
-  var model_attributes = ['id', '_id', 'title', 'description', 'start_time', 'end_time', 'extent'];
+  var model_attributes = ['id', '_id', 'title', 'description', 'start_time', 'end_time', 'extent', 'center', 'zoom'];
+  var filterPropertiesFromValidation = ['id', '_id', 'description', 'center', 'zoom'];
 
   model_attributes.forEach(function(prop) {
     Object.defineProperty(Box.prototype, prop, {
@@ -32,14 +34,79 @@
       service_ = this;
       rootScope_ = $rootScope;
       httpService_ = $http;
-      pulldownService_ = pulldownService;
-      q_ = $q;
+      dialogService_ = dialogService;
+      translate_ = $translate;
 
+      if (goog.isDefAndNotNull(configService.configuration.chapters)) {
+        angular.forEach(configService.configuration.chapters, function(config, index) {
+          if (!goog.isDefAndNotNull(boxes_[index])) {
+            boxes_.push([]);
+          }
+          httpService_({
+            url: '/maps/' + config.id + '/boxes',
+            method: 'GET'
+          }).then(function(result) {
+            console.log(result);
+            var geojson = result.data;
+            geojson.features.map(function(f) {
+              var props = f.properties;
+              props.id = f.id;
+              props.start_time = props.start_time * 1000;
+              props.end_time = props.end_time * 1000;
+              var storyBox = new Box(props);
+              storyBox.setId(f.id);
+              boxes_[index].push(storyBox);
+            });
+          });
+        });
+      }
+
+      $rootScope.$on('chapter-added', function(event, config) {
+        console.log('---Box Service: chapter-added');
+        boxes_.push([]);
+      });
+
+      $rootScope.$on('chapter-removed', function(event, chapter_index) {
+        console.log('---Box Service: chapter-removed', chapter_index);
+        boxes_.splice(chapter_index, 1);
+      });
       // when a map is saved, save the boxes.
       $rootScope.$on('map-saved', function(event, config) {
         console.log('----[ boxService, notified that the map was saved', config);
-        httpService_.post('/maps/' + config.id + '/boxes', new ol.format.GeoJSON().writeFeatures(boxes_, {dataProjection: 'EPSG:4326', featureProjection: 'EPSG:3857'})).success(function(data) {
+        var boxes = boxes_[config.chapter_index];
+        var clones = [];
+        boxes.forEach(function(a) {
+          var clone = a.clone();
+          if (a.get('start_time') !== undefined) {
+            a.set('start_time', getTime(a.get('start_time')));
+            clone.set('start_time', a.get('start_time') / 1000);
+          }
+          if (a.get('end_time') !== undefined) {
+            a.set('end_time', getTime(a.get('end_time')));
+            clone.set('end_time', a.get('end_time') / 1000);
+          }
+          if (goog.isDefAndNotNull(a.getId())) {
+            clone.setId(a.getId());
+            clone.id = a.getId();
+          }
+          clones.push(clone);
+        });
+        httpService_.post('/maps/' + config.map.id + '/boxes', new ol.format.GeoJSON().writeFeatures(clones, {
+          dataProjection: 'EPSG:4326',
+          featureProjection: 'EPSG:3857'
+        })).success(function(data) {
           console.log('----[ boxService, saved. ', data);
+          function noId(box) {
+            return !goog.isDefAndNotNull(box.getId());
+          }
+          var current_boxes = boxes_[config.chapter_index].filter(noId);
+          if (goog.isDefAndNotNull(data.ids)) {
+            for (var i = 0; i < current_boxes.length; i++) {
+              if (!goog.isDefAndNotNull(current_boxes[i].getId())) {
+                current_boxes[i].setId(data.ids[i]);
+              }
+            }
+          }
           return 'success';
         });
       });
@@ -48,7 +115,7 @@
         if (goog.isDefAndNotNull(config) && goog.isDefAndNotNull(config.id)) {
           console.log('----[ boxService, map created. initializing', config);
           httpService_({
-            url: '/maps/' + config.id + '/boxes',
+            url: '/maps/' + config.map.id + '/boxes',
             method: 'GET'
           }).then(function(result) {
             console.log(result);
@@ -67,30 +134,95 @@
       return service_;
     };
 
-    this.getBoxes = function() {
-      return boxes_;
+    this.getBoxes = function(chapter_index) {
+      return boxes_[chapter_index] || [];
     };
 
-    this.removeBox = function(storyBox) {
+    this.reorderBoxes = function(from_index, to_index) {
+      boxes_.splice(to_index, 0, boxes_.splice(from_index, 1)[0]);
+    };
 
-      for (var i = 0; i < boxes_.length; i++) {
-        if (storyBox._id == boxes_[i]._id) {
-          boxes_.splice(i, 1);
-          break;
+    this.removeBox = function(storyBox, chapter_index) {
+
+      var response = dialogService_.warn(translate_.instant('remove_box'), translate_.instant('sure_remove_box'),
+          [translate_.instant('yes_btn'), translate_.instant('no_btn')], false).then(function(button) {
+        switch (button) {
+          case 0:
+            for (var i = 0; i < boxes_[chapter_index].length; i++) {
+              if (storyBox.id == boxes_[chapter_index][i].id) {
+                boxes_[chapter_index].splice(i, 1);
+                rootScope_.$broadcast('box-removed', chapter_index);
+                toastr.success('Storybox has been removed', 'Delete Storybox');
+                return storyBox.id;
+              }
+            }
+            break;
+          case 1:
+            return null;
+        }
+      });
+      return response;
+    };
+
+    this.updateBox = function(box, chapter_index) {
+      toastr.success(translate_.instant('update_storybox'), translate_.instant('update_box_title'));
+      rootScope_.$broadcast('box-added', chapter_index);
+    };
+
+    this.validateBoxProperty = function(box, propertyName) {
+      return (box.hasOwnProperty(propertyName) && (goog.isDefAndNotNull(box[propertyName]) && !goog.string.isEmptySafe(box[propertyName])));
+    };
+
+    this.validateAllBoxProperties = function(box) {
+      var invalid_props = [];
+      for (var iProp = 0; iProp < model_attributes.length; iProp += 1) {
+        var property = model_attributes[iProp];
+        if (!this.validateBoxProperty(box, property) && !goog.array.contains(filterPropertiesFromValidation, property)) {
+          invalid_props.push(property);
         }
       }
-
+      if (invalid_props.length > 0) {
+        return invalid_props;
+      }
+      return true;
     };
 
-    this.addBox = function(props, loaded) {
-      var deferredResponse = q_.defer();
-      var storyBox = new Box(props);
-      boxes_.push(storyBox);
-      rootScope_.$broadcast('box-added', storyBox);
-      console.log('-- BoxService.addBox, added: ', storyBox);
-      pulldownService_.showStoryboxPanel();
+    this.addBox = function(props, chapter_index) {
+      var boxValidated = this.validateAllBoxProperties(props);
+      if (boxValidated !== true) {
+        translate_(boxValidated).then(function(translations) {
+          var invalid_string = 'These properties must be set before saving a StoryBox: ';
+          for (var iProp = 0; iProp < boxValidated.length; iProp += 1) {
+            var property = boxValidated[iProp];
+            var translatedProp = translations[property];
+            translatedProp = translatedProp.concat(', ');
+            invalid_string = invalid_string.concat(translatedProp);
+          }
+          toastr.error(invalid_string, 'Cannot save StoryBox');
+        });
+        return false;
+      }
+      if (getTime(props.start_time) > getTime(props.end_time)) {
+        toastr.error('Start Time must be before End Time', 'Invalid Time');
+        return false;
+      }
 
-      return deferredResponse.promise;
+      var boxRange = stutils.createRange(props.start_time, props.end_time);
+      for (var iBox = 0; iBox < boxes_[chapter_index].length; iBox += 1) {
+        var testBox = boxes_[chapter_index][iBox];
+        var testBoxRange = stutils.createRange(testBox.start_time, testBox.end_time);
+        if (boxRange.intersects(testBoxRange)) {
+          var overlapDates = 'StoryBox dates overlap with another storyBox: ' + testBox.title;
+          toastr.error(overlapDates, 'Overlapping Dates');
+          return false;
+        }
+      }
+      var storyBox = new Box(props);
+      boxes_[chapter_index].push(storyBox);
+      rootScope_.$broadcast('box-added', chapter_index);
+      console.log('-- BoxService.addBox, added: ', storyBox);
+
+      return true;
     };
 
   });

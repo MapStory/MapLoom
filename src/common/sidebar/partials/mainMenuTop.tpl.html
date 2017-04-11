@@ -1,0 +1,55 @@
+<div id="composerTopNav" class="ng-scope" style="padding-bottom: 5px;">
+  <span id="topNavContentWrapper">
+    <p id="siteNameWrapper">
+      <i class="fa fa-home" ng-click="redirect('/')" href></i> {{ application.name }}
+    </p>
+    <p id="usernameWrapper">
+      <small style="cursor:pointer" ng-click="redirect('/storyteller/' + storyService.username)"
+             style="font-size: 12px;font-weight: 300;">
+        @{{ storyService.username }}
+      </small>
+    </p>
+  </span>
+  <span ng-class="{'menuOpen': isShown, 'menuClosed': !isShown}">
+      <i ng-class="{'fa fa-caret-left': isShown, 'fa fa-caret-right': !isShown}" ng-click="toggleSidebar('mainMenu')" style="padding: 15px;"></i>
+  </span>
+</div>
+
+
+<div id="composerIconNav" ng-hide="menuSection=='editSingleStoryLayer' + layerName || menuSection=='viewSingleLayerHistory' + layerName" class="ng-scope">
+  <span style="display: inline-block;width: 25%;float: left;text-align: center;">
+    <i class="fa fa-save ng-scope" ng-click="storyService.save()" tooltip-append-to-body="true"
+    tooltip-placement="right" tooltip="{{ 'composer_save_draft_tooltip' | translate }}" style="font-size: 20px;color: #444;"></i>
+    <p style="font-size: 10px;font-weight: 500;color: #444;">
+      Save
+    </p>
+  </span>
+  <span style="display: inline-block;width: 25%;float: left;text-align: center;">
+    <i class="fa fa-share-square-o ng-scope" data-target="#mapSave" data-toggle="modal" tooltip-append-to-body="true"
+    tooltip-placement="right" tooltip="{{ 'composer_publish_tooltip' | translate }}"></i>
+    <p>
+      Publish
+    </p>
+  </span>
+  <!--<i class="fa fa-play-circle" id="previewMapStory" tooltip-append-to-body="true" tooltip-placement="right" tooltip="{{ 'composer_preview_tooltip' | translate }}"></i>-->
+  <span style="display: inline-block;width: 25%;float: left;text-align: center;">
+    <i class="fa fa-tags ng-scope" data-target="#mapProperties" data-toggle="modal" tooltip-append-to-body="true" tooltip-placement="right"
+    tooltip="{{ 'composer_properties_tooltip' | translate }}"></i>
+    <p>
+      Properties
+    </p>
+   </span>
+   <!--<i class="fa fa-cloud-upload" data-target="" data-toggle="modal" id="uploadLayer"></i>-->
+   <!--<i class="fa fa-user" ng-href="" target="_blank" id="userProfile"></i>-->
+   <span style="display: inline-block;width: 25%;float: left;text-align: center;" ng-click="openLink('/getstarted', '_blank')">
+     <i class="fa fa-support"></i>
+     <p>
+       Help
+     </p>
+   </span>
+</div>
+
+<h2 ng-show="menuSection=='mainMenu'">
+    <div class="title-text"><a id="mapstory-title" href="{{ storyService.id > 0 && '/story/' + storyService.id || '#'}}" target="_blank">{{ storyService.title }}</a></div>
+    <div class="topText">{{ 'application_name' | translate:'{ name: application.name }' }} > Chapters</div>
+</h2>

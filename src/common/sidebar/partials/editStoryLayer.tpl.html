@@ -1,0 +1,30 @@
+<div class="topText">
+    <a href="#" ng-click="updateMenuSection('mainMenu')">{{ 'Index' | translate:'Index' }}</a> >
+    <a href="#" ng-click="updateMenuSection('selectedChapter' + chapter.id)">{{ chapter.chapter }}</a> >
+    <a href="#" ng-click="updateMenuSection('storyLayers' + chapter.id); updateTourStep()">StoryLayers</a>
+</div>
+<div class="bottomText">{{ layerService.getTitle(storyService.active_layer) }}</div>
+
+<div class="menuItem">
+    <i class="fa fa-angle-left pull-left"></i>
+    <a href="#" ng-click="updateMenuSection('storyLayers' + chapter.id); updateTourStep()">Back to StoryLayers List</a>
+</div>
+
+<button class="btn-storylayer ng-scope layer-edit-button" id="editStoryLayerStyleButton"
+        ng-click="updateMenuSection('editStoryLayerStyle' + chapter.id + storyLayers.id)">
+        <i class="fa fa-paint-brush layer-edit-button-inner"></i>Style Layer
+</button>
+<button class="btn-storylayer ng-scope layer-edit-button" id="viewStoryLayerTableButton"
+        ng-click="storyService.showTable()"
+        ng-disabled="storyService.isNotEditable()">
+        <i class="fa fa-list-alt layer-edit-button-inner"></i>View Table
+</button>
+
+<button class="btn-storylayer ng-scope layer-edit-button" id="editStoryLayerMaskingButton"
+        ng-click="updateMenuSection('editStoryLayerMasking' + chapter.id + storyLayers.id)">
+        <i class="fa fa-low-vision layer-edit-button-inner"></i>Masking
+</button>
+<button class="btn-storylayer ng-scope layer-edit-button" id="removeLayerButton"
+        ng-click="removeLayer()">
+        <i class="fa fa-minus-circle layer-edit-button-inner"></i>Remove Layer
+</button>

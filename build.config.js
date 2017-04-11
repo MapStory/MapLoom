@@ -20,8 +20,8 @@ module.exports = {
    * app's unit tests.
    */
   app_files: {
-    js: [ 'src/**/*.js', '!src/**/*.spec.js', '!src/assets/**/*.js' ],
-    jsunit: [ 'src/**/*.spec.js' ],
+    js: [ 'src/**/*.js', '!src/**/*Spec.js', '!src/**/*.spec.js', '!src/assets/**/*.js' ],
+    jsunit: [ 'src/**/*.spec.js', 'src/**/*Spec.js' ],
 
     coffee: [ 'src/**/*.coffee', '!src/**/*.spec.coffee' ],
     coffeeunit: [ 'src/**/*.spec.coffee' ],
@@ -71,11 +71,13 @@ module.exports = {
       'vendor/angular-ui-utils/modules/route/route.js',
       'vendor/bootstrap/dist/js/bootstrap.js',
       'vendor/moment/min/moment.min.js',
+      'vendor/angular-bootstrap-colorpicker/js/bootstrap-colorpicker-module.min.js',
       'vendor/bootstrap3-datetimepicker/build/js/bootstrap-datetimepicker.min.js',
       'vendor/bootstrap3-datetimepicker/src/js/locales/bootstrap-datetimepicker.es.js',
       'vendor/x2js/xml2json.min.js',
       'vendor/angular-translate/angular-translate.js',
       'vendor/angular-cookies/angular-cookies.js',
+      'vendor/angular-sanitize/angular-sanitize.js',
       'vendor/closure-library/closure/goog/base.js',
       'vendor/closure-library/closure/goog/deps.js',
       'vendor/proj4js/proj4.js',
@@ -92,6 +94,9 @@ module.exports = {
       'vendor/story-tools/dist/story-tools-edit-ng.js',
       'vendor/story-tools/dist/story-tools-edit-tpls.js',
       'vendor/story-tools/dist/ows.js',
+      'vendor/toastr/toastr.js',
+      'vendor/hopscotch/dist/js/hopscotch.min.js',
+      'vendor/angular-ui-tree/dist/angular-ui-tree.min.js',
 
       //-- files for image gallery
       'vendor/blueimp-gallery/js/blueimp-gallery.js',
@@ -110,7 +115,7 @@ module.exports = {
       'vendor/blueimp-gallery/css/blueimp-gallery.css',
       'vendor/blueimp-gallery/css/blueimp-gallery-indicator.css',
       'vendor/blueimp-bootstrap-image-gallery/css/bootstrap-image-gallery.css',
-
+      'vendor/angular-bootstrap-colorpicker/css/colorpicker.min.css',
       'vendor/bootstrap3-datetimepicker/build/css/bootstrap-datetimepicker.min.css',
       'vendor/bootstrap-sortable/Contents/bootstrap-sortable.css',
       'vendor/angular-xeditable/dist/css/xeditable.css',
@@ -118,13 +123,24 @@ module.exports = {
 
       'vendor/vis/dist/vis.min.css',
       'vendor/nouislider/distribute/jquery.nouislider.min.css',
+
+      'vendor/font-awesome/css/font-awesome.min.css',
+
+      'vendor/toastr/toastr.css',
+
+      'vendor/hopscotch/dist/css/hopscotch.min.css',
+
+      'vendor/angular-ui-tree/dist/angular-ui-tree.min.css'
     ],
     assets: [
       'vendor/blueimp-gallery/img/*',
-      'vendor/blueimp-bootstrap-image-gallery/img/*'
+      'vendor/blueimp-bootstrap-image-gallery/img/*',
+      'vendor/hopscotch/dist/img/*'
     ],
     fonts: [
-      'vendor/bootstrap/fonts/*'
+      'vendor/bootstrap/fonts/*',
+      'vendor/font-awesome/fonts/*',
+      'vendor/open-sans-condensed/*'
     ]
   }
 };

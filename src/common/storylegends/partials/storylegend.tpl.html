@@ -1,0 +1,19 @@
+<div class="container">
+  <div class="layer">
+    <div class="form-group attribute-cell">
+      Layer Alias <i class="fa fa-question-circle" tooltip-append-to-body="true" tooltip-placement="right" tooltip="{{ 'storylayer_alias_tooltip' | translate }}"></i>
+      <textarea class="form-composer" class="layerAlias" rows="2" ng-model="layerAlias.title" id="layer-{{layerAlias.id}}">{{layerAlias.title}}</textarea>
+    </div>
+    <hr>
+    <div class="form-group">
+      <label for="customizeInfoBox">Layer Attributes</label><i class="fa fa-question-circle" tooltip-append-to-body="true" tooltip-placement="right" tooltip="{{ 'storylayer_attributes_tooltip' | translate }}"></i>
+      <div class="attribute-cell" ng-repeat="attribute in attributes">
+          {{ attribute.name }}
+          <div class="pull-right">Show <input type="checkbox" ng-model="attribute.show"/></div>
+          <input type="text" class="form-composer" ng-model="attribute.alias"/>
+      </div>
+    </div>
+    <hr>
+    <button ng-click="saveMasking()" class="btn-composer btn-block">Save Settings</button>
+  </div>
+</div>

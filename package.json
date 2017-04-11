@@ -13,7 +13,7 @@
     "url": "git@github.com:ROGUE-JCTD/MapLoom.git"
   },
   "scripts": {
-    "test": "grunt karma"
+    "test": "grunt karma:unit"
   },
   "dependencies": {},
   "devDependencies": {
@@ -24,6 +24,7 @@
     "grunt-contrib-clean": "~0.4.1",
     "grunt-contrib-coffee": "~0.7.0",
     "grunt-contrib-concat": "~0.3.0",
+    "grunt-contrib-connect": "^0.11.2",
     "grunt-contrib-copy": "~0.4.1",
     "grunt-contrib-jshint": "~0.4.3",
     "grunt-contrib-uglify": "~0.2.0",
@@ -37,7 +38,10 @@
     "grunt-recess": "~0.3.0",
     "jasmine": "^2.4.1",
     "karma": "^0.13.21",
+    "karma-coffee-preprocessor": "^0.3.0",
     "karma-jasmine": "^0.3.7",
+    "karma-jquery": "^0.1.0",
+    "karma-ng-html2js-preprocessor": "^0.2.1",
     "karma-phantomjs-launcher": "^1.0.0",
     "phantomjs-prebuilt": "^2.1.4"
   }

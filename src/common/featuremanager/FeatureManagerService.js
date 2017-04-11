@@ -11,7 +11,7 @@
   var exclusiveModeService_ = null;
   var dialogService_ = null;
   var q_ = null;
-  var state_ = '';                 // valid values: 'layers', 'layer', 'feature', or ''
+  var state_ = '';                 // valid values: 'layers', 'layer', 'feature', 'pin', or ''
   var selectedItem_ = null;
   var selectedItemPics_ = null;
   var selectedItemProperties_ = null;
@@ -23,6 +23,7 @@
   var clickPosition_ = null;
   var enabled_ = true;
   var wfsPostTypes_ = { UPDATE: 0, INSERT: 1, DELETE: 2 };
+  var pinCaptureDistance_ = 75;
 
   module.provider('featureManagerService', function() {
 
@@ -39,6 +40,7 @@
       dialogService_ = dialogService;
       q_ = $q;
       registerOnMapClick($rootScope, $compile);
+      registerOnPointerMove($rootScope, $compile);
 
       mapService_.editLayer.getSource().on(ol.source.VectorEventType.ADDFEATURE, function(event) {
         if (exclusiveModeService_.isEnabled()) {
@@ -142,14 +144,16 @@
       // this is used when code calls show without the user clicking on the map.
       if (featureInfoPerLayer_.length === 0) {
 
-        if (type === 'feature') {
+        if (type === 'pin') {
+          featureInfoPerLayer_.push({features: [item], layer: selectedLayer_});
+        } else if (type === 'feature') {
           featureInfoPerLayer_.push({features: [item], layer: selectedLayer_});
         } else if (type === 'layer') {
           featureInfoPerLayer_.push(item);
         } else if (type === 'layers') {
           featureInfoPerLayer_ = item;
         } else {
-          console.log('====[ Error: expected layers, layer, or feature. got: ', item);
+          console.log('====[ Error: expected pins, layers, layer, or feature. got: ', item);
           throw ({
             name: 'featureInfoBox',
             level: 'High',
@@ -161,12 +165,15 @@
         }
       }
 
-      if (type === 'feature') {
+      if (type === 'pin') {
+        state_ = 'pin';
+        selectedItem_ = item;
+      } else if (type === 'feature') {
         state_ = 'feature';
         selectedItem_ = item;
       } else if (type === 'layer') {
         if (item.features.length === 1) {
-          state_ = 'feature';
+          state_ = getItemType(item.features[0]);
           selectedItem_ = item.features[0];
         } else {
           state_ = 'layer';
@@ -175,7 +182,7 @@
       } else if (type === 'layers') {
         if (item.length === 1) {
           if (item[0].features.length === 1) {
-            state_ = 'feature';
+            state_ = getItemType(item[0].features[0]);
             selectedItem_ = item[0].features[0];
           } else {
             state_ = 'layer';
@@ -242,8 +249,14 @@
 
         // -- select the geometry if it is a feature, clear otherwise
         // -- store the selected layer of the feature
-        if (getItemType(selectedItem_) === 'feature') {
-          selectedLayer_ = this.getSelectedItemLayer().layer;
+        var itemType = getItemType(selectedItem_);
+        if (itemType === 'feature' || itemType === 'pin') {
+          selectedLayer_ = mapService_.pinLayer;
+
+          //If the item is a layer feature then we need to compare against the click event info to get the correct layer.
+          if (itemType === 'feature') {
+            selectedLayer_ = this.getSelectedItemLayer().layer;
+          }
           // note that another service may make a fake feature selection on a layer not in mapservice.
           // checking to make sure it had a geometry before making assumptions about edit layer etc
           if (goog.isDefAndNotNull(selectedItem_.geometry)) {
@@ -258,6 +271,13 @@
         // -- update the selectedItemProperties_
         var tempProps = {};
         var props = [];
+
+        var getMaskingFor = function(key, layer) {
+          var maskings = layer.get('metadata').config.maskings;
+          if (maskings && maskings.hasOwnProperty(key)) {
+            return maskings[key];
+          }
+        };
 
         if (getItemType(selectedItem_) === 'feature') {
           goog.object.forEach(selectedItem_.properties, function(v, k) {
@@ -285,7 +305,15 @@
                 tempProps[k] = [k, picsAttr];
               }
             } else {
-              tempProps[k] = [k, v];
+              var masking = getMaskingFor(k, selectedLayer_);
+              if (masking) {
+                var attributeName = masking.alias !== '' ? masking.alias : masking.name;
+                if (masking.show) {
+                  tempProps[k] = [attributeName, v];
+                }
+              } else {
+                tempProps[k] = [k, v];
+              }
             }
           });
         }
@@ -304,8 +332,14 @@
           }
         }
 
+        if (getItemType(selectedItem_) === 'pin') {
+          props['title'] = selectedItem_.title;
+          props['content'] = selectedItem_.content;
+          props['media'] = selectedItem_.media;
+
+        }
         selectedItemProperties_ = props;
-        //console.log('---- selectedItemProperties_: ', selectedItemProperties_);
+        console.log('---- selectedItemProperties_: ', selectedItemProperties_);
       }
 
       if (goog.isDefAndNotNull(position)) {
@@ -391,6 +425,63 @@
 
         blueimp.Gallery(this.getSelectedItemPics(), options);
       }
+    };
+
+    this.startPinInsert = function(pin, chapter_index) {
+      service_.hide();
+      enabled_ = false;
+      var geometryType = 'Point';
+      var geometryName = 'Point';
+
+      exclusiveModeService_.startExclusiveMode(translate_.instant('drawing_geometry'),
+          exclusiveModeService_.button(translate_.instant('accept_feature'), function() {
+            if (mapService_.editLayer.getSource().getFeatures().length < 1) {
+              dialogService_.warn(translate_.instant('adding_feature'), translate_.instant('must_create_feature'),
+                  [translate_.instant('btn_ok')], false);
+            } else {
+              exclusiveModeService_.addMode = false;
+              exclusiveModeService_.endExclusiveMode();
+              var feature = mapService_.editLayer.getSource().getFeatures()[0];
+              selectedItem_.geometry.type = feature.getGeometry().getType();
+              selectedItem_.geometry.coordinates = feature.getGeometry().getCoordinates();
+              var newGeom = transformGeometry(selectedItem_.geometry,
+                  mapService_.map.getView().getProjection(), mapService_.pinLayer.get('metadata').projection);
+              selectedItem_.geometry.coordinates = newGeom.getCoordinates();
+              service_.endPinInsert(true);
+
+            }
+          }),
+          exclusiveModeService_.button(translate_.instant('cancel_feature'), function() {
+            exclusiveModeService_.addMode = false;
+            exclusiveModeService_.endExclusiveMode();
+            mapService_.removeDraw();
+            mapService_.removeSelect();
+            mapService_.removeModify();
+            mapService_.clearEditLayer();
+            service_.endPinInsert(false);
+          }), geometryType);
+      exclusiveModeService_.addMode = true;
+      selectedItemProperties_ = pin;
+      selectedLayer_ = mapService_.pinLayer;
+      selectedItem_ = {geometry: {type: geometryType}, geometry_name: geometryName, properties: {}};
+      mapService_.map.addLayer(mapService_.editLayer);
+      if (geometryType.toLowerCase().search('geometry') > -1) {
+        $('#drawSelectDialog').modal('toggle');
+      } else {
+        mapService_.addDraw(geometryType);
+      }
+      rootScope_.$broadcast('startFeatureInsert');
+
+    };
+
+    this.endPinInsert = function(addPin) {
+      if (addPin === true) {
+        goog.object.extend(selectedItemProperties_, {'geometry': selectedItem_.geometry});
+        service_.hide();
+      }
+      enabled_ = true;
+      //mapService_.map.removeLayer(mapService_.editLayer);
+      rootScope_.$broadcast('endFeatureInsert', addPin);
     };
 
     this.startFeatureInsert = function(layer) {
@@ -555,7 +646,7 @@
       var returnResponse = q_.defer();
       deferredResponse.promise.then(function(resolve) {
         enabled_ = true;
-        rootScope_.$broadcast('endFeatureInsert', save);
+        rootScope_.$broadcast('endFeatureInsert', save, selectedLayer_, selectedItem_);
         returnResponse.resolve(resolve);
       }, function(reject) {
         returnResponse.reject(reject);
@@ -707,6 +798,8 @@
 
     this.endAttributeEditing = function(save, inserting, properties, coords) {
       //console.log('---- editFeatureDirective.saveEdits. feature: ', feature);
+      var selectedItemPropertiesChangedOld = [];
+      var selectedItemPropertiesChangedNew = [];
       var deferredResponse = q_.defer();
       if (inserting) {
         // create request
@@ -733,6 +826,8 @@
               property[1] = null;
             }
             if (properties[index][1] !== selectedItemProperties_[index][1]) {
+              selectedItemPropertiesChangedOld.push([selectedItemProperties_[index][0], selectedItemProperties_[index][1]]);
+              selectedItemPropertiesChangedNew.push([property[0], property[1]]);
               propertyXmlPartial += '<wfs:Property><wfs:Name>' + property[0] +
                   '</wfs:Name><wfs:Value>' + (property[1] === null ? '' : property[1]) + '</wfs:Value></wfs:Property>';
             }
@@ -776,7 +871,7 @@
       }
       var returnResponse = q_.defer();
       deferredResponse.promise.then(function(resolve) {
-        rootScope_.$broadcast('endAttributeEdit', save);
+        rootScope_.$broadcast('endAttributeEdit', save, selectedLayer_, selectedItemPropertiesChangedNew, selectedItemPropertiesChangedOld);
         returnResponse.resolve(resolve);
       }, function(reject) {
         returnResponse.reject(reject);
@@ -801,7 +896,7 @@
   function registerOnMapClick($rootScope, $compile) {
     mapService_.map.on('singleclick', function(evt) {
       if (enabled_) {
-        //console.log('loomFeatureInfoBox.map.onclick. event ', evt);
+        // console.log('loomFeatureInfoBox.map.onhover. event ', evt);
 
         // Overlay clones the element so we need to compile it after it is cloned so that ng knows about it
         if (!goog.isDefAndNotNull(containerInstance_)) {
@@ -818,17 +913,34 @@
         var infoPerLayer = [];
 
         // wait for all get feature infos to retun before proceeding.
-        var getFeatureInfoCompleted = function() {
+        var getFeatureInfoCompleted = function(fromPins) {
           completed += 1;
 
-          if (completed === layers.length) {
+          if (completed >= layers.length || goog.isDefAndNotNull(fromPins)) {
             if (infoPerLayer.length > 0) {
               clickPosition_ = evt.coordinate;
+              rootScope_.$broadcast('begin-edit');
               service_.show(infoPerLayer, evt.coordinate);
             }
           } else {
             service_.hide();
           }
+        };
+        var toRad = function(x) {
+          return x * Math.PI / 180;
+        };
+
+
+        var haversineDistance = function(lat1, lon1, lat2, lon2) {
+
+          var R = 6371; // km
+          var dLon = toRad(lon2 - lon1),
+              dLat = toRad(lat2 - lat1),
+              lat1Rad = toRad(lat1),
+              lat2Rad = toRad(lat2);
+          var a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(lat1Rad) * Math.cos(lat2Rad) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+          var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+          return R * c;
         };
 
         goog.array.forEach(layers, function(layer, index) {
@@ -851,15 +963,91 @@
             if (layerInfo.features && layerInfo.features.length > 0 && goog.isDefAndNotNull(layers[index])) {
               layerInfo.layer = layers[index];
               goog.array.insert(infoPerLayer, layerInfo);
+
+            }
+            getFeatureInfoCompleted();
+            //console.log('-- infoPerLayer: ', infoPerLayer);
+          }, function(reject) {
+            getFeatureInfoCompleted();
+            console.log('getFeatureInfo failed for layer: ', layer, ', reject response: ', reject);
+          });
+        });
+
+        if (goog.isDefAndNotNull(mapService_.pinLayer)) {
+          var layerInfo = {};
+          var pins = mapService_.pinLayer.getSource().getFeatures();
+          var pinsNearby = [];
+          if (pins && pins.length > 0) {
+            var numPins = pins.length;
+            for (var iPin = 0; iPin < numPins; iPin += 1) {
+              var pin = pins[iPin];
+              var pinGeom = pin.get('geometry');
+              var coords = ol.proj.transform(pinGeom.getCoordinates(), 'EPSG:3857', 'EPSG:4326');
+              var clickCoords = ol.proj.transform(evt.coordinate, 'EPSG:3857', 'EPSG:4326');
+              var distanceToCoord = haversineDistance(coords[1], coords[0], clickCoords[1], clickCoords[0]);
+              if (distanceToCoord <= pinCaptureDistance_) {
+                pinsNearby.push(pin);
+              }
+            }
+            if (pinsNearby.length > 0) {
+              layerInfo.features = pinsNearby;
+              layerInfo.layer = mapService_.pinLayer;
+              goog.array.insert(infoPerLayer, layerInfo);
+              getFeatureInfoCompleted(true);
             }
 
-            //console.log('-- infoPerLayer: ', infoPerLayer);
+          }
+        }
+
+      }
+    });
+  }
+
+  function registerOnPointerMove($rootScope, $compile) {
+    mapService_.map.on('pointermove', function(evt) {
+      if (enabled_) {
+        // console.log('loomFeatureInfoBox.map.onhover. event ', evt);
+
+        var view = mapService_.map.getView();
+        var layers = mapService_.getLayers();
+        var completed = 0;
+
+        var infoPerLayer = [];
+
+        // wait for all get feature infos to retun before proceeding.
+        var getFeatureInfoCompleted = function(fromPins) {
+          completed += 1;
+
+          if (completed >= layers.length || goog.isDefAndNotNull(fromPins)) {
+            if (infoPerLayer.length > 0) {
+              clickPosition_ = evt.coordinate;
+              rootScope_.$broadcast('begin-edit');
+              service_.show(infoPerLayer, evt.coordinate);
+            }
+          } else {
+            service_.hide();
+          }
+        };
+
+        goog.array.forEach(layers, function(layer, index) {
+          if (!layer.get('metadata').editable) {
+            return;
+          }
+          var source = layer.getSource();
+          var url = source.getGetFeatureInfoUrl(evt.coordinate, view.getResolution(), view.getProjection(),
+              {
+                'INFO_FORMAT': 'application/json',
+                'FEATURE_COUNT': 5
+              });
+
+          httpService_.get(url).then(function(response) {
             getFeatureInfoCompleted();
           }, function(reject) {
             getFeatureInfoCompleted();
             console.log('getFeatureInfo failed for layer: ', layer, ', reject response: ', reject);
           });
         });
+
       }
     });
   }
@@ -868,7 +1056,9 @@
     var type = '';
 
     if (goog.isDefAndNotNull(item)) {
-      if (item.properties) {
+      if (item.content || item.in_map) {
+        type = 'pin';
+      } else if (item.properties) {
         type = 'feature';
       } else if (item.features) {
         type = 'layer';
@@ -886,7 +1076,7 @@
     var commitMsg;
     if (postType === wfsPostTypes_.INSERT) {
       var featureType = selectedLayer_.get('metadata').name.split(':')[1] || selectedLayer_.get('metadata').name;
-      commitMsg = translate_.instant('added_1_feature', {'layer': selectedLayer_.get('metadata').nativeName});
+      commitMsg = translate_.instant('added_1_feature', {'layer': selectedLayer_.get('metadata').nativeName, 'application_name': rootScope_.application.name});
       wfsRequestTypePartial = '<wfs:Insert handle="' + commitMsg +
           '"><feature:' + featureType + ' xmlns:feature="' + selectedLayer_.get('metadata').workspaceURL + '">' +
           partial + '</feature:' + featureType + '></wfs:Insert>';
@@ -906,13 +1096,13 @@
           '<ogc:FeatureId fid="' + selectedItem_.id + '" />' +
           '</ogc:Filter>';
       if (postType === wfsPostTypes_.DELETE) {
-        commitMsg = translate_.instant('removed_1_feature', {'layer': selectedLayer_.get('metadata').nativeName});
+        commitMsg = translate_.instant('removed_1_feature', {'layer': selectedLayer_.get('metadata').nativeName, 'application_name': rootScope_.application.name});
         wfsRequestTypePartial = '<wfs:Delete handle="' + commitMsg +
             '" xmlns:feature="' + selectedLayer_.get('metadata').workspaceURL + '" typeName="' +
             selectedLayer_.get('metadata').name + '">' +
             filter + '</wfs:Delete>';
       } else if (postType === wfsPostTypes_.UPDATE) {
-        commitMsg = translate_.instant('modified_1_feature', {'layer': selectedLayer_.get('metadata').nativeName});
+        commitMsg = translate_.instant('modified_1_feature', {'layer': selectedLayer_.get('metadata').nativeName, 'application_name': rootScope_.application.name});
         wfsRequestTypePartial = '<wfs:Update handle="' + commitMsg +
             '" xmlns:feature="' + selectedLayer_.get('metadata').workspaceURL + '" typeName="' +
             selectedLayer_.get('metadata').name + '">' +

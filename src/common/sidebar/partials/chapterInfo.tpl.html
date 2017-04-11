@@ -1,0 +1,52 @@
+<div class="bottomText">{{ storyService.active_chapter.about.title }}</div>
+<div class="topText"><a href="#" ng-click="updateMenuSection('mainMenu')">{{ 'Index' | translate:'Index' }}</a> > <a href="#" ng-click="updateMenuSection('selectedChapter' + chapter.id)">{{ chapter.chapter }}</a></div>
+
+<div class="menuItem backbutton">
+  <a href="#" ng-click="updateMenuSection('selectedChapter' + chapter.id); updateTourStep(5)">
+    <span class="ng-binding backbuttonarrow">
+      <div>
+        <i class="fa fa-arrow-left"></i>
+      </div>
+    </span>
+    <span class="backicon" class="ng-binding">
+      Back
+    </span>
+  </a>
+</div>
+
+<div class="menuItem ng-scope">
+    <label for="chapterTitle">Chapter Title</label>
+    <input ng-model="storyService.active_chapter.about.title" class="form-composer ng-valid ng-dirty" type="text" name="chapterTitle" id="chapterTitle">
+</div>
+
+<div class="menuItem ng-scope">
+    <label for="chapterSummary">Chapter Summary</label>
+    <textarea rows="20" ng-model="storyService.active_chapter.about.abstract" class="form-composer ng-valid ng-dirty" name="chapterSummary" id="chapterSummary"></textarea>
+</div>
+
+<div id="baseMaps" class="menuItem">
+    <label for="baseMapList">Choose Your Basemap</label><i class="fa fa-question-circle" tooltip-append-to-body="true" tooltip-placement="right" tooltip="{{ 'choose_your_basemap_tooltip' | translate }}"></i>
+
+    <select class="form-control" name="baseMapList" id="baseMapList"
+            ng-init="baseMap=initBasemap()"
+            ng-options="baseMap.get('metadata').config.title for baseMap in baseMaps = mapService.getBaseMaps()"
+            ng-model="baseMap"
+            ng-change="mapService.selectedBaseMap(baseMap)">
+    </select>
+</div>
+
+<div class="ng-scope" style="margin: 20px;">
+  <label>
+    Chapter Default View
+  </label>
+  <label for="defaultzoom" style="font-style:italic;font-weight: 300;line-height: 1.2em;">
+    Pan and zoom around the map to set the default chapter view
+  </label>
+  <button ng-click="storyService.saveChapterView()" class="btn-composer btn-block" name="defaultzoom" id="defaultzoom">
+    Set as default
+  </button>
+</div>
+
+<div class="menuItem">
+    <button ng-click="storyService.save()" type="button" class="btn-composer btn-block">Save Chapter Info</button>
+</div>

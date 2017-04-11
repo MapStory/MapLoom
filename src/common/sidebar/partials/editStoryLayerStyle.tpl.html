@@ -1,0 +1,22 @@
+<div class="topText">
+    <a href="#" ng-click="updateMenuSection('mainMenu')">{{ 'Index' | translate:'Index' }}</a> >
+    <a href="#" ng-click="updateMenuSection('selectedChapter' + chapter.id)">{{ chapter.chapter }}</a> >
+    <a href="#" ng-click="updateMenuSection('storyLayers' + chapter.id); updateTourStep()">StoryLayers</a>
+</div>
+<div class="bottomText">{{ layerService.getTitle(storyService.active_layer) }}</div>
+
+<div class="menuItem">
+    <i class="fa fa-angle-left pull-left"></i>
+    <a href="#" ng-click="updateMenuSection('editStoryLayer' + chapter.id + storyLayers.id)">Back to Editing Tools</a>
+</div>
+
+<div class="editorForm">
+    <style-editor ng-if="menuSection=='editStoryLayerStyle' + chapter.id + storyLayers.id" class="minheight"
+                  control="{carousel:true, default:false}" layer="storyService.active_layer" ng-show="true"
+                  on-change="styleChanged"></style-editor>
+</div>
+<div class="menuItem">
+    <button class="btn-composer" ng-click="storyService.save()">Save Style</button>
+</div>
+
+<!-- <h5 class="text-right"><a href="http://wiki.mapstory.org/wiki/MapStory_Composer#Styles" target="_blank">Styling Help</a></h5>-->

@@ -7,12 +7,31 @@
         return {
           templateUrl: 'addlayers/partials/addlayers.tpl.html',
           link: function(scope, element) {
+            var searchFavorites = false;
             scope.serverService = serverService;
             scope.currentServerId = -1;
             scope.currentServer = null;
             scope.filterLayers = null;
+            scope.filterOptions = {
+              owner: null,
+              text: null,
+              is_published: true,
+              offset: 0
+            };
 
-            angular.element('#layer-filter')[0].attributes.placeholder.value = $translate.instant('filter_layers');
+            var resetText = function() {
+              scope.filterOptions.text = null;
+            };
+            var resetOwner = function() {
+              scope.filterOptions.owner = null;
+            };
+            var resetPublished = function() {
+              scope.filterOptions.is_published = true;
+            };
+            var resetOffset = function() {
+              scope.filterOptions.offset = 0;
+            };
+            //angular.element('#layer-filter')[0].attributes.placeholder.value = $translate.instant('filter_layers');
             scope.setCurrentServerId = function(serverId) {
               var server = serverService.getServerById(serverId);
               if (goog.isDefAndNotNull(server)) {
@@ -20,6 +39,7 @@
                 scope.currentServer = server;
               }
             };
+
 
             scope.getConnectedString = function() {
               return $translate.instant('connected_as', {value: scope.currentServer.username});
@@ -32,6 +52,51 @@
               scope.setCurrentServerId(server.id);
             }
 
+            var clearFilters = function() {
+              resetText();
+              resetOwner();
+              resetPublished();
+              resetOffset();
+              searchFavorites = false;
+            };
+
+            scope.defaultSearch = function() {
+              clearFilters();
+              scope.filterOptions.is_published = true;
+              scope.search();
+            };
+
+            scope.searchMyUploads = function() {
+              clearFilters();
+              scope.filterOptions.owner = true;
+              scope.filterOptions.is_published = null;
+              scope.search();
+            };
+
+            scope.loadMoreLayers = function() {
+              scope.filterOptions.offset = scope.filterOptions.offset + 100;
+              scope.search();
+            };
+
+            scope.layerCount = 0;
+
+            scope.searchMyFavorites = function() {
+              clearFilters();
+              searchFavorites = true;
+              scope.search();
+            };
+
+            scope.applyFilters = function() {
+            };
+
+            scope.search = function() {
+              if (searchFavorites) {
+                serverService.addSearchResultsForFavorites(serverService.getServerLocalGeoserver(), scope.filterOptions);
+              } else {
+                serverService.populateLayersConfigElastic(serverService.getServerLocalGeoserver(), scope.filterOptions);
+              }
+            };
+
             scope.getCurrentServerName = function() {
               var server = serverService.getServerById(scope.currentServerId);
               if (goog.isDefAndNotNull(server)) {
@@ -41,27 +106,25 @@
               return '';
             };
 
-            scope.addLayers = function(layersConfig) {
-              // if the server is not a typical server and instead the hardcoded ones
-              var length = layersConfig.length;
-              for (var index = 0; index < length; index += 1) {
-                var config = layersConfig[index];
-                if (config.add) {
-                  // NOTE: minimal config is the absolute bare minimum info that will be send to webapp containing
-                  //       maploom such as geonode. At this point, only source (server id), and name are used. If you
-                  //       find the need to add more parameters here, you need to put them in MapService.addLayer
-                  //       instead. that's because MapService.addLayer may be invoked from here, when a saved
-                  //       map is opened, or when a map is created from a layer in which case the logic here will be
-                  //       skipped! note, when MapService.addLayer is called, server's getcapabilities (if applicable)
-                  //       has already been resolved so you can used that info to append values to the layer.
-                  var minimalConfig = {
-                    name: config.Name,
-                    source: scope.currentServerId
-                  };
-                  mapService.addLayer(minimalConfig);
-
-                  config.add = false;
-                }
+            scope.addLayers = function(layerConfig) {
+              console.log(layerConfig);
+              toastr.success((layerConfig.Title || layerConfig.Name) + $translate.instant('layer_loading'), '', {
+                'timeOut': '0',
+                'extendedTimeOut': '0'
+              });
+              if (layerConfig.add) {
+                // NOTE: minimal config is the absolute bare minimum info that will be send to webapp containing
+                //       maploom such as geonode. At this point, only source (server id), and name are used. If you
+                //       find the need to add more parameters here, you need to put them in MapService.addLayer
+                //       instead. that's because MapService.addLayer may be invoked from here, when a saved
+                //       map is opened, or when a map is created from a layer in which case the logic here will be
+                //       skipped! note, when MapService.addLayer is called, server's getcapabilities (if applicable)
+                //       has already been resolved so you can used that info to append values to the layer.
+                var minimalConfig = {
+                  name: layerConfig.Name,
+                  source: scope.currentServerId
+                };
+                mapService.addLayer(minimalConfig);
               }
             };
 
@@ -77,8 +140,12 @@
                 if (goog.isDefAndNotNull(layer.get('metadata')) &&
                     goog.isDefAndNotNull(layer.get('metadata').config)) {
                   var conf = layer.get('metadata').config;
-                  if (conf.source === scope.currentServerId) {
-                    if (conf.name === layerConfig.Name) {
+                  var sourceServer = serverService.getServerById(conf.source);
+                  if (conf.source === scope.currentServerId || (goog.isDefAndNotNull(sourceServer.isVirtualService))) {
+                    if (conf.name === layerConfig.Name ||
+                        (typeof conf.name.split != 'undefined' &&
+                        layerConfig.Name === conf.name.split(':')[1]) ||
+                        (typeof layerConfig.Name.split != 'undefined' && layerConfig.Name.split(':')[1] === conf.name)) {
                       show = false;
                       break;
                     }

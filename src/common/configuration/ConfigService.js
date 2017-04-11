@@ -11,7 +11,7 @@
           config.headers['X-CSRFToken'] = service_.csrfToken;
         }
         if (goog.isDefAndNotNull(config) && goog.isDefAndNotNull(config.url) && config.url.indexOf('http') === 0 &&
-            config.url.indexOf('http://' + $location.host()) !== 0) {
+            config.url.indexOf($location.protocol() + '://' + $location.host()) !== 0) {
           var server = service_.getServerByURL(config.url);
           if (goog.isDefAndNotNull(server)) {
             if (!goog.isDefAndNotNull(server.authentication)) {
@@ -21,10 +21,10 @@
             }
           }
           var configCopy = $.extend(true, {}, config);
-          var proxy = service_.configuration.proxy;
-          if (goog.isDefAndNotNull(proxy)) {
-            configCopy.url = proxy + encodeURIComponent(configCopy.url);
-          }
+          //var proxy = service_.configuration.proxy;
+          //if (goog.isDefAndNotNull(proxy)) {
+          //configCopy.url = proxy + encodeURIComponent(configCopy.url);
+          //}
           return configCopy;
         }
         return config;
@@ -50,6 +50,10 @@
           abstract: ''
         },
         map: {
+          about: {
+            title: $translate.instant('new_map'),
+            abstract: ''
+          },
           center: [-9707182.048613328, 1585691.7893914054],
           zoom: 14,
           layers: [
@@ -92,6 +96,7 @@
       if (goog.isDefAndNotNull($window.config)) {
         goog.object.extend(this.configuration, $window.config, {});
       }
+      this.initial_config = this.configuration;
       this.username = this.configuration.username;
       this.currentLanguage = this.configuration.currentLanguage;
       this.user_profile_name = this.configuration.userprofilename;

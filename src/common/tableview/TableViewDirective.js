@@ -344,7 +344,8 @@
                   if (feature.properties[prop] !== tableViewService.rows[row].feature.properties[prop]) {
                     scope.rows[row].modified = true;
                   }
-                  if (feature.properties[prop] !== '' && feature.properties[prop] !== null) {
+                  if (feature.properties[prop] !== '' && feature.properties[prop] !== null &&
+                      goog.isDefAndNotNull(scope.restrictions[prop])) {
                     if (scope.restrictions[prop].type === 'int') {
                       if (!validateInteger(feature.properties[prop])) {
                         numErrors++;
@@ -353,9 +354,9 @@
                       if (!validateDouble(feature.properties[prop])) {
                         numErrors++;
                       }
+                    } else if (scope.restrictions[prop].nillable === 'false') {
+                      numErrors++;
                     }
-                  } else if (scope.restrictions[prop].nillable === 'false') {
-                    numErrors++;
                   }
                 }
                 if (scope.rows[row].modified) {
@@ -407,10 +408,10 @@
               var commitMessage = '';
               if (featuresModified === 1) {
                 commitMessage = $translate.instant('modified_1_feature',
-                    {'layer': tableViewService.selectedLayer.get('metadata').nativeName});
+                    {'layer': tableViewService.selectedLayer.get('metadata').nativeName, 'application_name': $rootScope.application.name});
               } else {
                 commitMessage = $translate.instant('modified_x_features',
-                    {'num': featuresModified, 'layer': tableViewService.selectedLayer.get('metadata').nativeName});
+                    {'num': featuresModified, 'layer': tableViewService.selectedLayer.get('metadata').nativeName, 'application_name': $rootScope.application.name});
               }
               console.log('commit message: ', commitMessage);
               var xml = '' +
