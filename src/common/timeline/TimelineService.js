@@ -220,7 +220,6 @@
               }
             }
             if (numDates > 0) {
-              //Need to add a tick somehow
               if (numDates === 1) {
                 newDate = firstDate;
                 newTick = stutils.getTime(newDate);
