@@ -115,7 +115,7 @@ describe('addLayers/ServerService', function() {
     describe('server is available and returns results', function() {
       beforeEach(function() {
         $httpBackend.resetExpectations();
-        $httpBackend.expect('GET', '/api/layers/search/?is_published=true&limit=100').respond(200, []);
+        $httpBackend.expect('GET', '/api/base/?type=layer&is_published=true&limit=100').respond(200, []);
       });
       it('reformats the Layer configs based on the server data', function() {
         spyOn(serverService, 'reformatLayerConfigs');
@@ -132,7 +132,7 @@ describe('addLayers/ServerService', function() {
     });
     describe('search server is invalid', function() {
       beforeEach(function() {
-        $httpBackend.expect('GET', '/api/layers/search/?is_published=true&limit=100').respond(500, '');
+        $httpBackend.expect('GET', '/api/base/?type=layer&is_published=true&limit=100').respond(500, '');
       });
       it('reformats the Layer configs based on the server data', function() {
         spyOn(serverService, 'reformatLayerConfigs');

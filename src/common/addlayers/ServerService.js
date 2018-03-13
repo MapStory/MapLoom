@@ -629,7 +629,7 @@ var SERVER_SERVICE_USE_PROXY = true;
     };
 
     this.populateLayersConfigElastic = function(server, filterOptions) {
-      var searchUrl = '/api/layers/search/?limit=100';
+      var searchUrl = '/api/base/?type=layer&limit=100';
       if (filterOptions !== null) {
         searchUrl = service_.applyESFilter(searchUrl, filterOptions);
       }

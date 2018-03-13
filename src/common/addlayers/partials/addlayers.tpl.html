@@ -27,7 +27,7 @@
                             </nav>
                             <div class="clearfix search-results">
                                 <div class="col-sm-3 cards"
-                                     ng-repeat="layer in layersConfig = serverService.getLayersConfigByName('Local Geoserver') | filter:filterLayers | filter:filterAddedLayers">
+                                     ng-repeat="layer in layersConfig = serverService.getLayersConfigByName('Local Geoserver')">
                                     <div class="cards-body">
                                         <img class="img-responsive" ng-src="{{layer.thumbnail_url}}" height="150" width="200">
                                         <h4>{{ layer.Title }}</h4>
