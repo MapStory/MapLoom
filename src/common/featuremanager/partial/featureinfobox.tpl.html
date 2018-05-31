@@ -87,10 +87,10 @@
         !featureManagerService.getSelectedLayer().get('metadata').readOnly" ng-click="featureManagerService.startAttributeEditing()"
                 tooltip-append-to-body="true" tooltip-placement="top" tooltip="{{'edit_attributes' | translate}}"
                 class="btn-composer glyphicon glyphicon-list-alt"></button>
-        <button type="button" ng-if="featureManagerService.getSelectedLayer().get('metadata').editable &&
-        !featureManagerService.getSelectedLayer().get('metadata').readOnly" ng-click="featureManagerService.startGeometryEditing()"
-                tooltip-append-to-body="true" tooltip-placement="top" tooltip="{{'edit_geometry' | translate}}"
-                class="btn-composer glyphicon glyphicon-edit"></button>
+        <!--<button type="button" ng-if="featureManagerService.getSelectedLayer().get('metadata').editable &&-->
+        <!--!featureManagerService.getSelectedLayer().get('metadata').readOnly" ng-click="featureManagerService.startGeometryEditing()"-->
+                <!--tooltip-append-to-body="true" tooltip-placement="top" tooltip="{{'edit_geometry' | translate}}"-->
+                <!--class="btn-composer glyphicon glyphicon-edit"></button>-->
         <button type="button" ng-if="!featureManagerService.getSelectedLayer().get('metadata').readOnly"
                 ng-click="deleteFeature()" tooltip-append-to-body="true" tooltip-placement="top" tooltip="{{'delete_feature' | translate}}"
                 class="btn-composer glyphicon glyphicon-trash">
