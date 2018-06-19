@@ -114,7 +114,9 @@
             };
 
             scope.showEditFeatureDialog = function() {
-              var message = 'You can edit a features attributes, or delete the feature, by clicking directly on the feature and using the options in the feature pop-up window. If you want to edit a features geometries, simply delete the feature and redraw a new feature that you think is more accurate.';
+              var message = 'You can edit a features attributes, or delete the feature, by clicking directly on the ' +
+                  'feature and using the options in the feature pop-up window. If you want to edit a features ' +
+                  'geometries, simply delete the feature and redraw a new feature that you think is more accurate.';
               dialogService.warn('Edit feature', message, ['OK'], false);
             };
 
