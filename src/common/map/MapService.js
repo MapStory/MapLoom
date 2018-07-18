@@ -1777,11 +1777,14 @@
 
     this.getCRSCode = function(CRS) {
       var code = 'EPSG:4326';
-      //forEachArrayish(CRS, function(_code) {
-      //if (_code !== 'CRS:84') {
-      //code = _code;
-      //}
-      //});
+      if (CRS !== undefined) {
+        forEachArrayish(CRS, function(_code) {
+          if (ol.proj.projections_[_code] !== undefined && _code !== 'CRS:84') {
+            code = _code;
+            return;
+          }
+        });
+      }
       return code;
     };
   });
