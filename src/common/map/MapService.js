@@ -777,7 +777,7 @@
               visible: minimalConfig.visibility,
               source: new ol.source.Vector({
                 parser: null,
-                wrapX: false
+                wrapX: true
               })
             });
           } else {
@@ -790,7 +790,7 @@
                 },
                 visible: minimalConfig.visibility,
                 source: new ol.source.OSM({
-                  wrapX: false
+                  wrapX: true
                 })
               });
             } else if (server.ptype === 'gxp_bingsource') {
@@ -798,7 +798,7 @@
               var sourceParams = {
                 key: 'Ak-dzM4wZjSqTlzveKz5u0d4IQ4bRzVI309GxmkgSVr1ewS6iPSrOvOKhA-CJlm3',
                 imagerySet: 'Aerial',
-                wrapX: false
+                wrapX: true
               };
 
               if (goog.isDefAndNotNull(fullConfig.sourceParams)) {
@@ -865,7 +865,7 @@
                 url: 'https://api.tiles.mapbox.com/v3/mapbox.' + fullConfig.sourceParams.layer + '.jsonp?secure=1',
                 crossOrigin: true,
                 jsonp: true,
-                wrapX: false
+                wrapX: true
               };
               var mbsource = new ol.source.TileJSON(parms);
 
@@ -935,7 +935,7 @@
               var layerParams = {
                 LAYERS: minimalConfig.name,
                 tiled: 'true',
-                wrapX: false
+                wrapX: true
               };
 
               if (goog.isDefAndNotNull(fullConfig.Layer[0].Style)) {
@@ -1059,7 +1059,7 @@
                     var y = (1 << z) - coordinate[2] - 1;
                     return '/proxy/?url=' + url + minimalConfig.name + '/' + z + '/' + x + '/' + y + '.png';
                   },
-                  wrapX: false
+                  wrapX: true
                 })
               });
 
