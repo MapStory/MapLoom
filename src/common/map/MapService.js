@@ -293,7 +293,7 @@
         url += '&style=' + layer.get('metadata').config.styles;
         url += '&_ts=' + layerStyleTimeStamps[layer.get('metadata').name];
       }
-      return url;
+      return useProxyUrlParam(true, url, configService_);
     };
 
     this.activateDragZoom = function() {
@@ -782,6 +782,76 @@
             });
           } else {
             if (server.ptype === 'gxp_osmsource') {
+              var osmLocal = {
+                attributions: [
+                  new ol.Attribution({
+                    html: settings.OsmLocalAttribution
+                  }),
+                  ol.source.OSM.ATTRIBUTION
+                ],
+                crossOrigin: null,
+                url: settings.OsmLocalUrl
+              };
+              var osmSource = (settings.OsmLocalUrl !== 'default') ? osmLocal : '';
+              var osmService = new ol.source.OSM(osmSource);
+              // The source will only have the one url in the first index
+              var osmUrl = useProxyUrlParam(getUseProxyParam(server), osmService.getUrls()[0], configService_);
+              // OSM source doesn't want the url encoded
+              // OSM requires special encoding due to variable url
+              var encodeOSMUrl = function(osmUrl) {
+                // OSM source doesn't want the url encoded, make sure it is decoded
+                osmUrl = decodeURIComponent(osmUrl);
+                // Error check: don't encode osmUrl if it's not proxied
+                if (osmUrl.indexOf(configService_.configuration.proxy) < 0) {
+                  return osmUrl;
+                }
+                // Must remove proxy from the url and add it back unencoded at the end
+                osmUrl = osmUrl.replace(configService_.configuration.proxy, '');
+
+                // Separate out parts that cannot be encoded, and only encode what is necessary
+                // osmUrl is regex with the following pattern:
+                // https://{a-c}.tile.openstreetmap.org/{z}/{x}/{y}
+                // parse out all {}, and only encoed non-bracket pieces
+                var openBracketIndex, closedBracketIndex, encodedOSMUrl = '';
+                while (osmUrl.indexOf('{') > -1) {
+                  openBracketIndex = osmUrl.indexOf('{');
+                  closedBracketIndex = osmUrl.indexOf('}');
+                  // if the closed bracket comes before the open bracket, something has gone wrong
+                  if (closedBracketIndex > openBracketIndex) {
+                    // encode up to the open bracket
+                    encodedOSMUrl += encodeURIComponent(osmUrl.substring(0, openBracketIndex));
+                    // don't encode what's in the brackets
+                    encodedOSMUrl += osmUrl.substring(openBracketIndex, closedBracketIndex + 1);
+                    osmUrl = osmUrl.substring(closedBracketIndex + 1);
+                  } else {
+                    // TODO: what do we do if this happens?
+                    // for now just skipping to next
+                    osmUrl = osmUrl.substring(closedBracketIndex + 1);
+                    // alert the user something went wrong
+                    console.log('WARNING: A closing bracket } preceded an opening bracket { in url: ' + osmUrl);
+                    // prevent infinite loop potential with dangling open bracket
+                    if (osmUrl.indexOf('}') == -1 && osmUrl.indexOf('{') > -1) {
+                      osmUrl = osmUrl.substring(openBracketIndex + 1);
+                    }
+                  }
+                }
+                // TODO: What to do if there's dangling closed bracket?
+                if (osmUrl.indexOf('}') > -1) {
+                  // alert the user something went wrong
+                  console.log('WARNING: A dangling closed bracket } was in url: ' + osmUrl);
+                }
+                // encode anything remaining
+                encodedOSMUrl += encodeURIComponent(osmUrl);
+                return configService_.configuration.proxy + encodedOSMUrl;
+              };
+              // Only encode the OSM url if it's being proxied
+              var encodedOsmUrl;
+              if (osmUrl.indexOf(configService_.configuration.proxy) > -1) {
+                encodedOsmUrl = encodeOSMUrl(osmUrl);
+              } else {
+                encodedOsmUrl = osmUrl;
+              }
+              osmService.setUrl(encodedOsmUrl);
               layer = new ol.layer.Tile({
                 metadata: {
                   serverId: server.id,
@@ -789,9 +859,7 @@
                   title: fullConfig.Title
                 },
                 visible: minimalConfig.visibility,
-                source: new ol.source.OSM({
-                  wrapX: true
-                })
+                source: osmService
               });
             } else if (server.ptype === 'gxp_bingsource') {
 
@@ -814,6 +882,7 @@
                   title: fullConfig.Layer[0].Title
                 },
                 visible: minimalConfig.visibility,
+                // TODO: Do we want to override the url in fullConfig.sourceParams?
                 source: new ol.source.BingMaps(sourceParams)
               });
             } else if (server.ptype === 'gxp_googlesource') {
@@ -825,10 +894,16 @@
                 name: minimalConfig.name,
                 title: fullConfig.Title
               };
+              // TODO: Should this portion be proxied?
               var attribution = new ol.Attribution({
-                html: 'Tiles &copy; <a href="' + server.url + '">ArcGIS</a>'
+                html: 'Tiles &copy; <a href="' + useProxyUrlParam(getUseProxyParam(server), server.url, configService_) + '">ArcGIS</a>'
               });
-              var serviceUrl = server.url + 'tile/{z}/{y}/{x}';
+              // ensure the trailing slash is set.
+              url = server.url;
+              if (url.substring(url.length - 1) !== '/') {
+                url += '/';
+              }
+              var serviceUrl = useProxyUrlParam(getUseProxyParam(server), url, configService_) + 'tile/{z}/{y}/{x}';
               var serviceSource = null;
               if (server.proj === 'EPSG:4326') {
                 var projection = ol.proj.get('EPSG:4326');
@@ -862,7 +937,7 @@
               });
             } else if (server.ptype === 'gxp_mapboxsource') {
               var parms = {
-                url: 'https://api.tiles.mapbox.com/v3/mapbox.' + fullConfig.sourceParams.layer + '.jsonp?secure=1',
+                url: useProxyUrlParam(getUseProxyParam(server), 'https://api.tiles.mapbox.com/v3/mapbox.' + fullConfig.sourceParams.layer + '.jsonp?secure=1', configService_),
                 crossOrigin: true,
                 jsonp: true,
                 wrapX: true
@@ -883,6 +958,7 @@
                 console.log('====[ Error: could not create base layer.');
               }
             } else if (server.ptype === 'gxp_mapquestsource') {
+              // TODO: Do we want to override the url in fullConfig.sourceParams?
               var source = new ol.source.MapQuest(fullConfig.sourceParams);
 
               if (goog.isDefAndNotNull(source)) {
@@ -971,7 +1047,7 @@
                   serverId: server.id,
                   name: minimalConfig.name,
                   jsonstyle: service_.styleStorageService.getSavedStyle(minimalConfig.name),
-                  url: goog.isDefAndNotNull(mostSpecificUrl) ? mostSpecificUrl : undefined,
+                  url: goog.isDefAndNotNull(mostSpecificUrl) ? useProxyUrlParam(getUseProxyParam(server), mostSpecificUrl, configService_) : undefined,
                   title: fullConfig.Layer[0].Title,
                   abstract: fullConfig.Layer[0].Abstract,
                   keywords: fullConfig.Layer[0].KeywordList,
@@ -985,8 +1061,9 @@
                   dimensions: fullConfig.Layer[0].Dimension
                 },
                 visible: minimalConfig.visibility,
+                // TODO: Do we need to fix the request url for the TileWMS source?
                 source: new ol.source.TileWMS({
-                  url: mostSpecificUrlWms,
+                  url: useProxyUrlParam(getUseProxyParam(server), mostSpecificUrlWms, configService_),
                   params: layerParams
                 })
               });
@@ -1040,7 +1117,7 @@
                 metadata: {
                   serverId: server.id,
                   name: minimalConfig.name,
-                  url: goog.isDefAndNotNull(url) ? url : undefined,
+                  url: goog.isDefAndNotNull(url) ? useProxyUrlParam(getUseProxyParam(server), url, configService_) : undefined,
                   title: fullConfig.Layer[0].Title,
                   abstract: fullConfig.Layer[0].Abstract,
                   keywords: fullConfig.Layer[0].KeywordList,

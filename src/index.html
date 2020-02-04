@@ -38,7 +38,7 @@
             currentLanguage: "{{language|default:'en'}}",
             userprofilename: {% if user.is_authenticated %} "{{ user.get_full_name }}" {% else %} undefined {% endif %},
             userprofileemail: {% if user.is_authenticated %} "{{ user.email }}" {% else %} undefined {% endif %},
-            proxy: "/proxy/?url=",
+            proxy: "{{ PROXY_URL }}" !== '' ? "{{ PROXY_URL }}" : "/proxy/?url=",
             nominatimUrl: "http://nominatim.openstreetmap.org",
             printService: "{{GEOSERVER_BASE_URL}}pdf/",
             /* The URL to a REST map configuration service.  This service
