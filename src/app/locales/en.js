@@ -368,7 +368,7 @@
     'storybox_time_frame_tooltip': 'Every StoryBox needs a start time and an end time.',
     'storypin_title_tooltip': 'Give your StoryPin a short and descriptive title.',
     'storypin_content_tooltip': 'Type the text you want associated with your StoryPin here.',
-    'storypin_media_tooltip': 'Want to add an image, video or audio to your StoryPin? Just go to one of these whitelisted sources and copy/paste the URL of the content you want here! (YouTube, Twitter, Imgur, SoundCloud, Flickr, Instagram, Vimeo, Vine)',
+    'storypin_media_tooltip': 'Want to add an image, video or audio to your StoryPin? Just go to one of these whitelisted sources and copy/paste the URL of the content you want here! Be sure to use the embed link the site provides. (YouTube, Twitter, Imgur, SoundCloud, Flickr, Instagram, Vimeo, Vine)',
     'storypin_time_frame_tooltip': 'Giving your StoryPin a start and end time will ensure it only appears during that time frame. If you don’t provide a start and end time, it will appear for the duration of your chapter.',
     'storypin_options_tooltip': 'Decide if you want your StoryPin to appear on the map the timeline, or both.',
     'layer_load_failed': ' failed to load',
